@@ -50,42 +50,33 @@ export async function uploadAttachment(userId: string, file: File): Promise<stri
 }
 
 /**
- * Upload a user profile picture (avatar) to Supabase Storage
+ * Upload a user profile picture (avatar) to Cloudinary
  */
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const cloudName = 'dhsyajcf3';
+  const uploadPreset = 'patr-mail';
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn("Supabase credentials missing! Falling back to Object URL for local testing.");
-    return URL.createObjectURL(file);
-  }
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('public_id', `avatar_${userId}_${Date.now()}`);
 
-  const baseUrl = getCleanSupabaseUrl();
-  const extension = file.name.split('.').pop() || 'jpg';
-  const filePath = `${userId}_${Date.now()}.${extension}`;
-
-  const uploadUrl = `${baseUrl}/storage/v1/object/avatars/${filePath}`;
-
-  const response = await fetch(uploadUrl, {
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'apikey': supabaseAnonKey,
-      'Content-Type': file.type,
-    },
-    body: file,
+    body: formData,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Supabase avatar upload error:", errorText);
-    throw new Error(`Failed to upload avatar: ${response.statusText}`);
+    console.error("Cloudinary avatar upload error:", errorText);
+    throw new Error(`Failed to upload avatar to Cloudinary: ${response.statusText}`);
   }
 
-  // Return public download URL
-  return `${baseUrl}/storage/v1/object/public/avatars/${filePath}`;
+  const data = await response.json();
+  // Return secure URL from Cloudinary
+  return data.secure_url;
 }
+
 
 /**
  * Delete a file attachment from Supabase Storage
