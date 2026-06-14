@@ -16,6 +16,7 @@ export default function ProfilePage() {
 
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [dob, setDob] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -101,6 +102,7 @@ export default function ProfilePage() {
     if (user) {
       setFullName(user.displayName || '');
       setPhoneNumber(user.phoneNumber || '');
+      setDob(user.dob || '');
     }
   }, [user]);
 
@@ -122,6 +124,24 @@ export default function ProfilePage() {
       return;
     }
 
+    if (dob) {
+      const birthDate = new Date(dob);
+      if (isNaN(birthDate.getTime())) {
+        setError('Kripya ek valid date of birth enter karein.');
+        return;
+      }
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        setError('Aapki umar kam se kam 18 saal honi chahiye.');
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -138,6 +158,7 @@ export default function ProfilePage() {
       const updatedData = {
         displayName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
+        dob: dob,
       };
       await updateUserDoc(user.uid, updatedData);
 
@@ -292,6 +313,20 @@ export default function ProfilePage() {
                   className="w-full h-11 px-4 rounded-xl border border-border bg-muted/30 text-muted-foreground cursor-not-allowed text-sm font-mono"
                 />
                 <p className="text-[11px] text-muted-foreground">Aapka permanent Patr Address jisko badla nahi ja sakta</p>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground/80 flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="w-full h-11 px-4 rounded-xl border border-border bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm [color-scheme:light] dark:[color-scheme:dark]"
+                  disabled={loading}
+                />
               </div>
 
               {/* Phone Number */}
