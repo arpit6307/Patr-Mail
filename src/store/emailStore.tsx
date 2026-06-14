@@ -2,11 +2,9 @@
 
 import { createContext, useRef, useContext, type ReactNode } from 'react';
 import { createStore, useStore } from 'zustand';
-import type { MailboxEntry, EmailCategory, Email } from '@/types/email';
+import type { MailboxEntry, EmailCategory, Email, EmailFolder } from '@/types/email';
 
 // ─── Store Type ─────────────────────────────────────────
-
-export type EmailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash' | 'archive' | 'spam';
 
 export interface EmailState {
   emails: MailboxEntry[];

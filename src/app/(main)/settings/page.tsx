@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
+import { useUIStore, type LayoutDensity } from '@/store/uiStore';
 import { updateUserDoc } from '@/lib/firebase/firestore';
 import { sendPasswordResetEmail } from '@/lib/firebase/auth';
 import {
@@ -17,6 +17,11 @@ import {
   CheckCircle,
   AlertCircle,
   HelpCircle,
+  Keyboard,
+  Laptop,
+  AlignJustify,
+  CalendarDays,
+  Plane,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,12 +33,21 @@ export default function SettingsPage() {
   
   const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
+  const density = useUIStore((s) => s.density);
+  const setDensity = useUIStore((s) => s.setDensity);
+  const keyboardShortcuts = useUIStore((s) => s.keyboardShortcuts);
+  const setKeyboardShortcuts = useUIStore((s) => s.setKeyboardShortcuts);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [signature, setSignature] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   
+  // Vacation responder states
+  const [vacationEnabled, setVacationEnabled] = useState(false);
+  const [vacationSubject, setVacationSubject] = useState('');
+  const [vacationMessage, setVacationMessage] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +57,13 @@ export default function SettingsPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
 
-  // Load signature and notification preferences
+  // Load preferences
   useEffect(() => {
     if (user) {
       setSignature(user.signature || '');
+      setVacationEnabled(user.vacationResponderEnabled || false);
+      setVacationSubject(user.vacationSubject || '');
+      setVacationMessage(user.vacationMessage || '');
     }
     
     // Load local notification preferences
@@ -74,15 +91,24 @@ export default function SettingsPage() {
     setSuccess(false);
 
     try {
-      // 1. Save signature in Firestore
-      await updateUserDoc(user.uid, { signature: signature.trim() });
+      // 1. Save preferences in Firestore user doc
+      const updatedData = {
+        signature: signature.trim(),
+        vacationResponderEnabled: vacationEnabled,
+        vacationSubject: vacationSubject.trim(),
+        vacationMessage: vacationMessage.trim(),
+      };
+      await updateUserDoc(user.uid, updatedData);
 
       // 2. Update local storage preferences
       localStorage.setItem('patr_pref_sound', String(soundEnabled));
       localStorage.setItem('patr_pref_notify', String(notificationsEnabled));
 
       // 3. Update Zustand Store and LocalStorage User doc
-      const updatedUser = { ...user, signature: signature.trim() };
+      const updatedUser = { 
+        ...user, 
+        ...updatedData
+      };
       setUser(updatedUser);
       localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(updatedUser));
 
@@ -120,7 +146,7 @@ export default function SettingsPage() {
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
     { id: 'general', label: 'General Preferences', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Account & Security', icon: Lock },
+    { id: 'security', label: 'Account & Auto-Responder', icon: Lock },
   ];
 
   return (
@@ -160,14 +186,14 @@ export default function SettingsPage() {
         <div className="space-y-6 pt-2">
           
           {/* SUCCESS / ERROR ALERTS */}
-          {success && activeTab !== 'security' && (
+          {success && (
             <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-sm animate-fade-in">
               <CheckCircle className="w-5 h-5 shrink-0" />
               <span>Settings successfully save ho gayi hain!</span>
             </div>
           )}
 
-          {error && activeTab !== 'security' && (
+          {error && (
             <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm animate-fade-in">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
@@ -215,6 +241,59 @@ export default function SettingsPage() {
                     <Moon className="w-4.5 h-4.5 text-indigo-400" />
                     Dark Mode
                   </button>
+                </div>
+              </div>
+
+              {/* Layout Density Settings */}
+              <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Layout Density</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Mail rows aur list elements ki details density choose karein</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 max-w-md">
+                  {(['comfortable', 'cozy', 'compact'] as LayoutDensity[]).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDensity(d)}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1.5 h-16 rounded-xl border text-xs font-semibold capitalize transition-all",
+                        density === d
+                          ? "border-patr-orange bg-patr-orange/5 text-patr-orange font-bold ring-2 ring-patr-orange/20"
+                          : "border-border bg-background/30 text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      <AlignJustify className={cn(
+                        "w-4 h-4",
+                        d === 'comfortable' && "scale-y-100",
+                        d === 'cozy' && "scale-y-75",
+                        d === 'compact' && "scale-y-50"
+                      )} />
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts Settings */}
+              <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Keyboard className="w-4.5 h-4.5 text-patr-orange" />
+                      Keyboard Shortcuts
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Shortcuts bind karein (e.g. <strong>C</strong> to Compose, <strong>G then I</strong> to go to Inbox)</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={keyboardShortcuts}
+                      onChange={(e) => setKeyboardShortcuts(e.target.checked)}
+                      className="w-5 h-5 text-patr-orange border-border focus:ring-patr-orange rounded"
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -312,10 +391,70 @@ export default function SettingsPage() {
             </form>
           )}
 
-          {/* ACCOUNT & SECURITY TAB */}
+          {/* ACCOUNT & SECURITY / VACATION RESPONDER TAB */}
           {activeTab === 'security' && (
             <div className="space-y-6">
               
+              {/* Vacation Responder */}
+              <form onSubmit={handleSaveGeneral} className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-5 shadow-sm">
+                <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Plane className="w-5 h-5 text-patr-orange" />
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Vacation Auto-Responder (Out of Office)</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Naye email aane par sender ko automatic auto-reply reply bhejein</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={vacationEnabled}
+                    onChange={(e) => setVacationEnabled(e.target.checked)}
+                    className="w-4.5 h-4.5 text-patr-orange border-border focus:ring-patr-orange rounded cursor-pointer"
+                  />
+                </div>
+
+                {vacationEnabled && (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Auto-reply Subject */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground/80">Auto-Reply Subject</label>
+                      <input
+                        type="text"
+                        value={vacationSubject}
+                        onChange={(e) => setVacationSubject(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                        placeholder="I am out of office / Chutti par hu"
+                        required
+                      />
+                    </div>
+
+                    {/* Auto-reply Body */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground/80">Auto-Reply Message</label>
+                      <textarea
+                        value={vacationMessage}
+                        onChange={(e) => setVacationMessage(e.target.value)}
+                        rows={4}
+                        className="w-full p-4 rounded-xl border border-border bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm font-sans resize-none"
+                        placeholder="Hello, main abhi chutti par hu aur email check nahi kar pa raha. Wapas aakar reply karunga. Dhanyawad!"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    <Save className="w-4.5 h-4.5" />
+                    {loading ? 'Saving...' : 'Auto-Responder Save Karo'}
+                  </button>
+                </div>
+              </form>
+
               {/* Password Reset Section */}
               <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
                 <div className="flex items-center gap-2">

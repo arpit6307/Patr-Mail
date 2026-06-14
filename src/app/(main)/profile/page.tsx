@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { updateUserDoc } from '@/lib/firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase/config';
-import { User, Phone, Mail, Calendar, Shield, Save, CheckCircle, AlertCircle, HardDrive } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Shield, Save, CheckCircle, AlertCircle, HardDrive, Camera, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
@@ -15,8 +15,56 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Size limit check (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Profile photo 5MB se kam ki honi chahiye.');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const { uploadAvatar } = await import('@/lib/firebase/storage');
+      
+      // 1. Upload to Supabase Storage
+      const photoURL = await uploadAvatar(user.uid, file);
+
+      // 2. Update Auth user photoURL
+      if (firebaseAuth.currentUser) {
+        await updateProfile(firebaseAuth.currentUser, { photoURL });
+      }
+
+      // 3. Update Firestore user document
+      await updateUserDoc(user.uid, { photoURL });
+
+      // 4. Update Zustand state & LocalStorage cache
+      const updatedUser = {
+        ...user,
+        photoURL,
+      };
+      setUser(updatedUser);
+      localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(updatedUser));
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Error uploading avatar:', err);
+      setError('Profile photo upload karne mein dikkat aayi.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Sync component state with store user data
   useEffect(() => {
@@ -125,8 +173,35 @@ export default function ProfilePage() {
           
           {/* Avatar and quick info */}
           <div className="md:col-span-1 border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 flex flex-col items-center justify-center text-center shadow-sm">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-patr-orange to-[#FF8C60] flex items-center justify-center text-white text-3xl font-bold shadow-lg mb-4 ring-4 ring-patr-orange/20 select-none">
-              {getInitials(user.displayName)}
+            <div className="relative group w-24 h-24 mb-4 select-none">
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName}
+                  className="w-24 h-24 rounded-full object-cover shadow-lg ring-4 ring-patr-orange/20"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-patr-orange to-[#FF8C60] flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-patr-orange/20">
+                  {getInitials(user.displayName)}
+                </div>
+              )}
+              {/* Hover Edit Overlay */}
+              <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold">
+                <Camera className="w-5 h-5 mb-1" />
+                Change DP
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-patr-orange" />
+                </div>
+              )}
             </div>
             <h2 className="text-lg font-bold text-foreground truncate max-w-full">{user.displayName}</h2>
             <p className="text-xs text-muted-foreground font-mono mt-1 select-all">{user.patrAddress}</p>

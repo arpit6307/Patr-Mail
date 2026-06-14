@@ -5,12 +5,16 @@ import { createStore, useStore } from 'zustand';
 
 // ─── Store Type ─────────────────────────────────────────
 
+export type LayoutDensity = 'comfortable' | 'cozy' | 'compact';
+
 export interface UIState {
   theme: 'light' | 'dark';
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   mobileNavVisible: boolean;
   isMobile: boolean;
+  density: LayoutDensity;
+  keyboardShortcuts: boolean;
 }
 
 export interface UIActions {
@@ -21,6 +25,8 @@ export interface UIActions {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileNavVisible: (visible: boolean) => void;
   setIsMobile: (isMobile: boolean) => void;
+  setDensity: (density: LayoutDensity) => void;
+  setKeyboardShortcuts: (enabled: boolean) => void;
 }
 
 export type UIStore = UIState & UIActions;
@@ -34,6 +40,8 @@ export const createUIStore = (initialState: Partial<UIState> = {}) => {
     sidebarCollapsed: false,
     mobileNavVisible: true,
     isMobile: false,
+    density: 'comfortable',
+    keyboardShortcuts: false,
     ...initialState,
 
     setTheme: (theme) => {
@@ -63,6 +71,20 @@ export const createUIStore = (initialState: Partial<UIState> = {}) => {
     setMobileNavVisible: (mobileNavVisible) => set({ mobileNavVisible }),
 
     setIsMobile: (isMobile) => set({ isMobile }),
+
+    setDensity: (density) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('patr-density', density);
+      }
+      set({ density });
+    },
+
+    setKeyboardShortcuts: (keyboardShortcuts) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('patr-shortcuts', String(keyboardShortcuts));
+      }
+      set({ keyboardShortcuts });
+    },
   }));
 };
 

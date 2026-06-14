@@ -4,7 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export type EmailCategory = 'primary' | 'social' | 'promotions';
 
-export type EmailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash' | 'archive';
+export type EmailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash' | 'archive' | 'spam';
 
 // ─── Attachment ─────────────────────────────────────────
 

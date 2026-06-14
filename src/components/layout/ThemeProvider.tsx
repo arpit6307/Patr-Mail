@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useUIStore } from '@/store/uiStore';
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -8,15 +9,32 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [mounted, setMounted] = useState(false);
+  const setTheme = useUIStore((s) => s.setTheme);
+  const setDensity = useUIStore((s) => s.setDensity);
+  const setKeyboardShortcuts = useUIStore((s) => s.setKeyboardShortcuts);
 
   useEffect(() => {
     setMounted(true);
-    // Load saved theme or detect system preference
-    const saved = localStorage.getItem('patr-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (prefersDark ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, []);
+    
+    // Theme
+    const savedTheme = localStorage.getItem('patr-theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    // Density
+    const savedDensity = localStorage.getItem('patr-density') as any;
+    if (savedDensity) {
+      setDensity(savedDensity);
+    }
+
+    // Shortcuts
+    const savedShortcuts = localStorage.getItem('patr-shortcuts') === 'true';
+    setKeyboardShortcuts(savedShortcuts);
+  }, [setTheme, setDensity, setKeyboardShortcuts]);
 
   // Prevent flash of wrong theme
   if (!mounted) {

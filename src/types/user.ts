@@ -10,4 +10,7 @@ export interface User {
   lastLoginAt?: Timestamp | Date;
   phoneNumber?: string;
   signature?: string;
+  vacationResponderEnabled?: boolean;
+  vacationSubject?: string;
+  vacationMessage?: string;
 }

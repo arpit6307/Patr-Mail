@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Star, Paperclip } from 'lucide-react';
 import type { MailboxEntry } from '@/types/email';
 import { formatEmailDate, getInitials, getAvatarColor, cn } from '@/lib/utils';
+import { useUIStore } from '@/store/uiStore';
 
 interface EmailItemProps {
   email: MailboxEntry;
@@ -19,6 +20,7 @@ export function EmailItem({
   onToggleStar,
 }: EmailItemProps) {
   const router = useRouter();
+  const density = useUIStore((s) => s.density);
 
   const handleRowClick = () => {
     router.push(`/email/${email.emailId}`);
@@ -27,12 +29,27 @@ export function EmailItem({
   const initials = getInitials(email.senderName);
   const avatarBg = getAvatarColor(email.senderName);
 
+  // Density spacing and font sizes
+  const paddingClass = 
+    density === 'compact' ? 'py-1.5 gap-2.5' : 
+    density === 'cozy' ? 'py-2.5 gap-3.5' : 
+    'py-3.5 gap-4';
+  
+  const avatarClass = 
+    density === 'compact' ? 'w-7.5 h-7.5 text-[10px]' : 
+    density === 'cozy' ? 'w-8.5 h-8.5 text-[11px]' : 
+    'w-9.5 h-9.5 text-xs';
+
+  const textClass = 
+    density === 'compact' ? 'text-xs' : 'text-sm';
+
   return (
     <div
       onClick={handleRowClick}
       data-unread={!email.isRead}
       className={cn(
-        'email-item group flex items-center gap-4 px-4 py-3 border-b border-border/40 cursor-pointer transition-all hover:bg-muted/30 select-none',
+        'email-item group flex items-center border-b border-border/40 cursor-pointer transition-all hover:bg-muted/30 select-none',
+        paddingClass,
         !email.isRead && 'bg-primary/5 dark:bg-primary/[0.03]'
       )}
     >
@@ -69,7 +86,7 @@ export function EmailItem({
 
       {/* Avatar */}
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
+        className={cn("rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm", avatarClass)}
         style={{ backgroundColor: avatarBg }}
       >
         {initials}
@@ -81,7 +98,8 @@ export function EmailItem({
         <div className="min-w-0 md:col-span-1">
           <p
             className={cn(
-              'text-sm text-foreground truncate',
+              textClass,
+              'text-foreground truncate',
               !email.isRead ? 'font-bold' : 'font-medium'
             )}
           >
@@ -91,7 +109,7 @@ export function EmailItem({
 
         {/* Subject & Preview */}
         <div className="min-w-0 md:col-span-3 flex items-center gap-2">
-          <p className="text-sm truncate">
+          <p className={cn(textClass, "truncate")}>
             <span className={cn('text-foreground', !email.isRead ? 'font-semibold' : 'font-normal')}>
               {email.subject || '(No Subject)'}
             </span>

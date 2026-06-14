@@ -41,9 +41,16 @@ export async function POST(req: NextRequest) {
     }
     const senderUid = senderSnap.docs[0].id;
 
-    // 2. Validate recipients and collect their UIDs
+    // 2. Validate recipients and collect their UIDs & vacation settings
     const recipientUids: string[] = [];
     const allRecipients = [...to, ...(cc || [])];
+    const vacationRepliesToTrigger: { 
+      recipientUid: string; 
+      recipientAddress: string; 
+      recipientName: string; 
+      subject: string; 
+      message: string; 
+    }[] = [];
 
     for (const recipient of allRecipients) {
       const recQ = query(
@@ -58,7 +65,25 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      recipientUids.push(recSnap.docs[0].id);
+      const recDoc = recSnap.docs[0];
+      const recData = recDoc.data();
+      recipientUids.push(recDoc.id);
+
+      // Add to vacation responder trigger list if enabled and we are not replying to ourselves
+      if (
+        recData.vacationResponderEnabled && 
+        recData.vacationSubject && 
+        recData.vacationMessage && 
+        recipient.email !== from.email
+      ) {
+        vacationRepliesToTrigger.push({
+          recipientUid: recDoc.id,
+          recipientAddress: recipient.email,
+          recipientName: recData.displayName || recipient.email.split('@')[0],
+          subject: recData.vacationSubject,
+          message: recData.vacationMessage,
+        });
+      }
     }
 
     // 3. Create the master Email document in /emails
@@ -141,6 +166,70 @@ export async function POST(req: NextRequest) {
       const snapshot = await get(unreadRef);
       const current = snapshot.val() ?? 0;
       await set(unreadRef, current + 1);
+    }
+
+    // 6. Trigger vacation auto-replies asynchronously/sequentially
+    for (const reply of vacationRepliesToTrigger) {
+      try {
+        const autoReplyDoc = await addDoc(collection(db, 'emails'), {
+          from: { email: reply.recipientAddress, name: reply.recipientName },
+          to: [{ email: from.email, name: from.name }],
+          cc: [],
+          subject: `Auto-Reply: ${reply.subject}`,
+          body: `<div style="font-family: sans-serif; line-height: 1.5; color: #333; white-space: pre-wrap;">${reply.message}</div><br/><hr/><div style="color: #888; font-size: 11px; font-style: italic;">This is an automated vacation reply from Patr. 🇮🇳</div>`,
+          attachments: [],
+          isRead: false,
+          isStarred: false,
+          isDraft: false,
+          category: 'primary',
+          createdAt: serverTimestamp(),
+        });
+
+        const replyEmailId = autoReplyDoc.id;
+        const autoReplyBatch = writeBatch(db);
+
+        // Save auto-reply to vacation responder's Sent folder
+        const autoReplySentRef = doc(collection(db, 'users', reply.recipientUid, 'mailbox'));
+        autoReplyBatch.set(autoReplySentRef, {
+          emailId: replyEmailId,
+          folder: 'sent',
+          isRead: true,
+          isStarred: false,
+          senderName: reply.recipientName,
+          senderEmail: reply.recipientAddress,
+          subject: `Auto-Reply: ${reply.subject}`,
+          preview: reply.message.substring(0, 100),
+          hasAttachments: false,
+          category: 'primary',
+          receivedAt: serverTimestamp(),
+        });
+
+        // Save auto-reply to original sender's Inbox folder
+        const autoReplyInboxRef = doc(collection(db, 'users', senderUid, 'mailbox'));
+        autoReplyBatch.set(autoReplyInboxRef, {
+          emailId: replyEmailId,
+          folder: 'inbox',
+          isRead: false,
+          isStarred: false,
+          senderName: reply.recipientName,
+          senderEmail: reply.recipientAddress,
+          subject: `Auto-Reply: ${reply.subject}`,
+          preview: reply.message.substring(0, 100),
+          hasAttachments: false,
+          category: 'primary',
+          receivedAt: serverTimestamp(),
+        });
+
+        await autoReplyBatch.commit();
+
+        // Increment unread count for the original sender
+        const senderUnreadRef = ref(rtdb, `users/${senderUid}/unreadCount`);
+        const snapshot = await get(senderUnreadRef);
+        const current = snapshot.val() ?? 0;
+        await set(senderUnreadRef, current + 1);
+      } catch (err) {
+        console.error(`Failed to process vacation auto-reply from ${reply.recipientAddress}:`, err);
+      }
     }
 
     return NextResponse.json({ success: true, emailId });
