@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        "unreadCount": {
+          // Only the owner can read their unread count
+          ".read": "auth != null && auth.uid == $uid",
+          // Anyone (including API routes) can update the unread count when sending an email
+          ".write": "true"
+        }
+      }
+    }
+  }
+}

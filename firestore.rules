@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper to check if the document belongs to the authenticated user
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      // Anyone can read profiles to check username availability and fetch names/avatars
+      allow read: if true;
+      // Users can only create or update their own profile document
+      allow write: if isOwner(userId);
+
+      // Mailbox sub-collection rules
+      match /mailbox/{mailboxId} {
+        // Users can only read, write or delete their own mailbox entries
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Emails collection rules (the master emails)
+    match /emails/{emailId} {
+      // Authenticated users can create emails
+      allow create: if isAuthenticated();
+      
+      // Authenticated users can read, update, or delete emails
+      allow read, update, delete: if isAuthenticated();
+    }
+  }
+}

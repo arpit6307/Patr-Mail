@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-plus-jakarta: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+    /* Light Theme — PRD §11.1 */
+    --background: 0 0% 100%;
+    --foreground: 230 33% 14%;
+    --card: 230 100% 98%;
+    --card-foreground: 230 33% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 33% 14%;
+    --primary: 18 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 82% 51%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 140 82% 28%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 64% 40%;
+    --warning: 38 92% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 18 100% 60%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    /* Dark Theme — PRD §11.1 */
+    --background: 240 33% 8%;
+    --foreground: 210 40% 98%;
+    --card: 240 25% 14%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 25% 14%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 18 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 100% 64%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 15% 18%;
+    --muted-foreground: 220 9% 65%;
+    --accent: 140 60% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 70%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 64% 40%;
+    --warning: 45 93% 58%;
+    --border: 240 14% 25%;
+    --input: 240 14% 25%;
+    --ring: 18 100% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-plus-jakarta);
+  }
+}
+
+@layer components {
+  /* Glass effect for cards and modals */
+  .glass {
+    @apply bg-white/80 dark:bg-[#1A1A2E]/80 backdrop-blur-xl border border-white/20 dark:border-white/10;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-patr-orange via-patr-blue to-patr-green;
+  }
+
+  /* Patr brand gradient */
+  .patr-gradient {
+    @apply bg-gradient-to-r from-patr-orange to-patr-blue;
+  }
+
+  /* Hover card effect */
+  .hover-card {
+    @apply transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  /* Sidebar styling */
+  .sidebar {
+    @apply w-[260px] border-r border-border bg-card h-screen overflow-y-auto;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+           hover:bg-muted cursor-pointer text-muted-foreground
+           data-[active=true]:bg-primary/10 data-[active=true]:text-primary;
+  }
+
+  /* Email item in list */
+  .email-item {
+    @apply flex items-center gap-3 px-4 py-3 border-b border-border/50 cursor-pointer
+           transition-colors hover:bg-muted/50
+           data-[unread=true]:bg-primary/5 data-[unread=true]:font-semibold;
+  }
+
+  /* Floating Action Button */
+  .fab {
+    @apply fixed bottom-20 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground
+           shadow-lg flex items-center justify-center
+           transition-transform hover:scale-110 active:scale-95;
+  }
+
+  /* Form input styling */
+  .form-input {
+    @apply h-11 px-4 rounded-lg border border-input bg-background text-foreground
+           placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring
+           transition-shadow;
+  }
+
+  /* Loading skeleton animation */
+  .skeleton {
+    @apply bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%] animate-shimmer rounded;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  /* 3D Utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
