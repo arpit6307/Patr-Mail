@@ -5,25 +5,52 @@ import { useAuthStore } from '@/store/authStore';
 import { updateUserDoc } from '@/lib/firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase/config';
-import { User, Phone, Mail, Calendar, Shield, Save, CheckCircle, AlertCircle, HardDrive, Camera, Loader2, Copy, Check, Sparkles } from 'lucide-react';
+import {
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  Shield,
+  Save,
+  CheckCircle,
+  AlertCircle,
+  HardDrive,
+  Camera,
+  Loader2,
+  Copy,
+  Check,
+  Sparkles,
+  Info,
+  HelpCircle,
+  Activity,
+  Key,
+  CheckSquare,
+  Square
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '@/lib/cropImage';
 
+type ProfileTab = 'personal' | 'contact' | 'storage';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
 
+  const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [dob, setDob] = useState('');
+  const [gender, setGender] = useState('');
+  const [bio, setBio] = useState('');
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
+  const [hasSecurityPin, setHasSecurityPin] = useState(false);
 
   // Cropper states
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -37,7 +64,6 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Size limit check (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('Profile photo 5MB se kam ki honi chahiye.');
       return;
@@ -49,7 +75,6 @@ export default function ProfilePage() {
       setCropImageSrc(reader.result as string);
     });
     reader.readAsDataURL(file);
-    // Reset file input value so same file can be selected again
     e.target.value = '';
   };
 
@@ -65,23 +90,17 @@ export default function ProfilePage() {
     setSuccess(false);
 
     try {
-      // 1. Get cropped image file
       const croppedFile = await getCroppedImg(cropImageSrc, croppedAreaPixels, originalFileName);
-
       const { uploadAvatar } = await import('@/lib/firebase/storage');
       
-      // 2. Upload to Supabase Storage
       const photoURL = await uploadAvatar(user.uid, croppedFile);
 
-      // 3. Update Auth user photoURL
       if (firebaseAuth.currentUser) {
         await updateProfile(firebaseAuth.currentUser, { photoURL });
       }
 
-      // 4. Update Firestore user document
       await updateUserDoc(user.uid, { photoURL });
 
-      // 5. Update Zustand state & LocalStorage cache
       const updatedUser = {
         ...user,
         photoURL,
@@ -91,7 +110,7 @@ export default function ProfilePage() {
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-      setCropImageSrc(null); // Close modal
+      setCropImageSrc(null);
     } catch (err: any) {
       console.error('Error uploading avatar:', err);
       setError('Profile photo upload karne mein dikkat aayi.');
@@ -106,6 +125,15 @@ export default function ProfilePage() {
       setFullName(user.displayName || '');
       setPhoneNumber(user.phoneNumber || '');
       setDob(user.dob || '');
+      setGender(user.gender || '');
+      setBio(user.bio || '');
+      setRecoveryEmail(user.recoveryEmail || '');
+    }
+    
+    // Check security PIN existence
+    if (typeof window !== 'undefined') {
+      const pin = localStorage.getItem('patr_security_pin');
+      setHasSecurityPin(!!pin);
     }
   }, [user]);
 
@@ -120,7 +148,7 @@ export default function ProfilePage() {
     );
   }
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
       setError('Kripya apna naam enter karein.');
@@ -150,22 +178,20 @@ export default function ProfilePage() {
     setSuccess(false);
 
     try {
-      // 1. Update Auth profile display name
       if (firebaseAuth.currentUser) {
         await updateProfile(firebaseAuth.currentUser, {
           displayName: fullName.trim(),
         });
       }
 
-      // 2. Update Firestore user doc
       const updatedData = {
         displayName: fullName.trim(),
-        phoneNumber: phoneNumber.trim(),
         dob: dob,
+        gender: gender,
+        bio: bio,
       };
       await updateUserDoc(user.uid, updatedData);
 
-      // 3. Update Zustand Store and LocalStorage cache
       const updatedUser = {
         ...user,
         ...updatedData,
@@ -176,8 +202,38 @@ export default function ProfilePage() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      console.error('Error updating profile:', err);
+      console.error('Error updating personal profile:', err);
       setError('Profile update karne mein dikkat aayi. Kripya dobara koshish karein.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const updatedData = {
+        phoneNumber: phoneNumber.trim(),
+        recoveryEmail: recoveryEmail.trim(),
+      };
+      await updateUserDoc(user.uid, updatedData);
+
+      const updatedUser = {
+        ...user,
+        ...updatedData,
+      };
+      setUser(updatedUser);
+      localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(updatedUser));
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Error updating contact profile:', err);
+      setError('Contact info save karne mein dikkat aayi.');
     } finally {
       setLoading(false);
     }
@@ -214,17 +270,32 @@ export default function ProfilePage() {
 
   const getProfileCompletion = () => {
     let pct = 0;
-    if (fullName) pct += 25;
-    if (user?.photoURL) pct += 25;
-    if (dob) pct += 25;
-    if (phoneNumber) pct += 25;
+    if (fullName.trim()) pct += 20;
+    if (user?.photoURL) pct += 20;
+    if (dob) pct += 20;
+    if (phoneNumber.trim()) pct += 20;
+    if (gender) pct += 10;
+    if (bio.trim()) pct += 10;
     return pct;
   };
+  
   const completionPct = getProfileCompletion();
+
+  // SVG Radial Ring calculation
+  const radius = 52;
+  const strokeWidth = 5;
+  const circumference = 2 * Math.PI * radius; // 326.72
+  const strokeDashoffset = circumference - (completionPct / 100) * circumference;
+
+  const tabs: { id: ProfileTab; label: string; icon: any }[] = [
+    { id: 'personal', label: 'Personal Information', icon: User },
+    { id: 'contact', label: 'Contact & Recovery', icon: Mail },
+    { id: 'storage', label: 'Storage & Status', icon: HardDrive },
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin bg-background p-6 animate-fade-in">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Futuristic Header with Background Glow */}
         <div className="relative p-6 rounded-3xl border border-border/60 bg-gradient-to-r from-card/80 to-card/20 backdrop-blur-md overflow-hidden shadow-sm">
@@ -237,12 +308,12 @@ export default function ProfilePage() {
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-patr-orange/20 text-patr-orange border border-patr-orange/30">
                   Mera Khata
                 </span>
-                <span className="text-xs text-muted-foreground font-semibold">• Active User</span>
+                <span className="text-xs text-muted-foreground font-semibold">• Active Profile</span>
               </div>
               <h1 className="text-2xl font-bold text-foreground mt-1.5 flex items-center gap-2">
                 Account Profile Settings
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apne personal details aur security verification ko customize karein</p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apne personal details aur verification status ko manage karein</p>
             </div>
             
             <div className="flex items-center gap-2.5 text-xs text-muted-foreground font-semibold bg-background/50 border border-border/60 rounded-xl px-4 py-2">
@@ -252,45 +323,78 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Profile Card Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Premium Split Layout */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
           
-          {/* Avatar and quick info Card (Identity Card) */}
-          <div className="lg:col-span-1 flex flex-col space-y-6">
+          {/* Left Column: Avatar Card & Navigation */}
+          <div className="w-full lg:w-80 shrink-0 space-y-6 lg:sticky lg:top-20">
+            
+            {/* Identity Card with radial progress ring */}
             <div className="border border-border/60 rounded-3xl bg-card/40 backdrop-blur p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
               {/* Radial glow background */}
               <div className="absolute inset-0 bg-gradient-to-b from-patr-orange/[0.03] to-transparent pointer-events-none" />
 
-              <div className="relative group w-28 h-28 mb-5 select-none">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName}
-                    className="w-28 h-28 rounded-full object-cover shadow-lg ring-4 ring-patr-orange/20 transition-transform duration-300 group-hover:scale-105"
+              {/* Glowing SVG Progress Ring */}
+              <div className="relative w-36 h-36 mb-4 flex items-center justify-center select-none">
+                <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                  {/* Outer circle shadow base */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    className="stroke-muted/30 dark:stroke-muted/10"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
                   />
-                ) : (
-                  <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-patr-orange to-[#FF8C60] flex items-center justify-center text-white text-4xl font-bold shadow-lg ring-4 ring-patr-orange/20 relative">
-                    {getInitials(user.displayName)}
-                  </div>
-                )}
-                {/* Hover Camera Icon Overlay */}
-                <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-[10px] font-bold">
-                  <Camera className="w-6 h-6 mb-1 text-patr-orange" />
-                  Change DP
-                  <input
-                    type="file"
-                    aria-label="Upload Avatar"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                    disabled={uploading}
+                  {/* Animated Progress Circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    className="stroke-patr-orange transition-all duration-700 ease-out"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    style={{
+                      filter: 'drop-shadow(0 0 6px rgba(255, 107, 53, 0.45))'
+                    }}
                   />
-                </label>
-                {uploading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                    <Loader2 className="w-6 h-6 animate-spin text-patr-orange" />
-                  </div>
-                )}
+                </svg>
+
+                {/* Avatar uploader container inside */}
+                <div className="relative group w-24 h-24 rounded-full overflow-hidden shadow-lg border border-border/40">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-patr-orange to-[#FF8C60] flex items-center justify-center text-white text-3xl font-bold">
+                      {getInitials(user.displayName)}
+                    </div>
+                  )}
+                  {/* Hover Camera Icon Overlay */}
+                  <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer text-[10px] font-bold">
+                    <Camera className="w-5 h-5 mb-1 text-patr-orange" />
+                    Change DP
+                    <input
+                      type="file"
+                      aria-label="Upload Avatar"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </label>
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                      <Loader2 className="w-5 h-5 animate-spin text-patr-orange" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <h2 className="text-lg font-bold text-foreground truncate max-w-full">{user.displayName}</h2>
@@ -308,181 +412,397 @@ export default function ProfilePage() {
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-500 animate-pulse" /> : <Copy className="w-3 h-3 text-muted-foreground/60" />}
               </div>
               
-              <div className="w-full border-t border-border/40 my-6" />
+              <div className="w-full border-t border-border/40 my-5" />
 
-              {/* Profile Completion Meter */}
+              {/* Profile Completion Checklist Summary */}
               <div className="w-full space-y-2 text-left">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-muted-foreground">Profile Completion</span>
-                  <span className="font-bold text-patr-orange">{completionPct}%</span>
+                  <span className="font-semibold text-muted-foreground font-semibold">Profile Status</span>
+                  <span className="font-bold text-patr-orange">{completionPct}% Complete</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-patr-orange to-[#FF8C60] rounded-full transition-all duration-500"
-                    style={{ width: `${completionPct}%` }}
-                  />
+                
+                {/* Micro Checklist indicator pills */}
+                <div className="flex gap-1.5 justify-center py-1">
+                  <div className={cn("h-1.5 flex-1 rounded-full", fullName.trim() ? "bg-patr-orange" : "bg-muted")} />
+                  <div className={cn("h-1.5 flex-1 rounded-full", user.photoURL ? "bg-patr-orange" : "bg-muted")} />
+                  <div className={cn("h-1.5 flex-1 rounded-full", dob ? "bg-patr-orange" : "bg-muted")} />
+                  <div className={cn("h-1.5 flex-1 rounded-full", phoneNumber.trim() ? "bg-patr-orange" : "bg-muted")} />
+                  <div className={cn("h-1.5 flex-1 rounded-full", gender || bio.trim() ? "bg-patr-orange" : "bg-muted")} />
                 </div>
-                <p className="text-[10px] text-muted-foreground/85 leading-relaxed pt-1 font-semibold">
-                  Apne details aur Date of Birth update karke security level badhayein!
+                
+                <p className="text-[10px] text-muted-foreground/80 leading-relaxed pt-1.5 font-semibold text-center">
+                  Apna photo aur recovery info set karke account safe aur complete rakhein!
                 </p>
               </div>
             </div>
 
-            {/* Storage Progress Card */}
-            <div className="border border-border/60 rounded-3xl bg-card/40 backdrop-blur p-6 shadow-sm relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-xl bg-patr-orange/10 border border-patr-orange/20">
-                  <HardDrive className="w-5 h-5 text-patr-orange" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">Storage Status</h3>
-                  <p className="text-[10px] text-muted-foreground">Universal free storage</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground font-semibold">
-                  <span>0.1 MB Used</span>
-                  <span>5.0 GB Free (100%)</span>
-                </div>
-                <div className="w-full h-2.5 bg-muted/60 rounded-full overflow-hidden">
-                  <div className="w-[1%] h-full bg-patr-orange rounded-full" />
-                </div>
-                <p className="text-[10px] text-muted-foreground pt-1.5 leading-relaxed font-semibold">
-                  Patr mail par aapko hamesha ke liye 5GB safe cloud storage free milta hai! 🇮🇳
-                </p>
-              </div>
+            {/* Sidebar Tab Navigation */}
+            <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 border-b lg:border-b-0 border-border/40 select-none">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setError(null);
+                    }}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all focus:outline-none text-left whitespace-nowrap lg:whitespace-normal w-auto lg:w-full select-none shrink-0',
+                      active
+                        ? 'bg-patr-orange text-white shadow-lg shadow-patr-orange/20 font-bold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/40 font-semibold'
+                    )}
+                  >
+                    <Icon className="w-4.5 h-4.5 shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
+
           </div>
 
-          {/* Form details Redesign */}
-          <div className="lg:col-span-2 border border-border/60 rounded-3xl bg-card/40 backdrop-blur p-8 shadow-sm flex flex-col justify-between">
-            <form onSubmit={handleSave} className="space-y-6">
-              
-              {/* ALERTS */}
-              {success && (
-                <div className="flex items-center gap-2.5 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-sm animate-fade-in font-semibold">
-                  <CheckCircle className="w-5 h-5 shrink-0" />
-                  <span>Profile successfully update ho gayi hai! 🎉</span>
-                </div>
-              )}
+          {/* Right Column: Tab Contents */}
+          <div className="flex-1 w-full space-y-6">
+            
+            {/* Alerts */}
+            {success && (
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-sm animate-fade-in font-semibold">
+                <CheckCircle className="w-5 h-5 shrink-0" />
+                <span>Profile info successfully update ho gayi hai! 🎉</span>
+              </div>
+            )}
 
-              {error && (
-                <div className="flex items-center gap-2.5 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm animate-fade-in font-semibold">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+            {error && (
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm animate-fade-in font-semibold">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-              {/* SECTION 1: Personal Details */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-patr-orange uppercase tracking-wider border-b border-border/30 pb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Personal Details
-                </h3>
+            {/* PERSONAL INFO TAB */}
+            {activeTab === 'personal' && (
+              <form onSubmit={handleSavePersonal} className="space-y-6">
+                
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Personal Information</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apna public name, date of birth aur basic information set karein</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Full Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-muted-foreground" /> Full Name
+                      </label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                        placeholder="Apna Pura Naam Likhein"
+                        disabled={loading}
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Full Name */}
+                    {/* Date of Birth */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm [color-scheme:light] dark:[color-scheme:dark]"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Gender Selector */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-muted-foreground" /> Gender
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {['male', 'female', 'other', 'none'].map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGender(g)}
+                          className={cn(
+                            "h-11 rounded-xl border text-xs font-bold transition-all capitalize flex items-center justify-center gap-1.5",
+                            gender === g
+                              ? "border-patr-orange bg-patr-orange/5 text-patr-orange font-bold ring-2 ring-patr-orange/20"
+                              : "border-border bg-background/30 text-muted-foreground hover:bg-muted/40 font-semibold"
+                          )}
+                        >
+                          {g === 'male' && 'Male 👨'}
+                          {g === 'female' && 'Female 👩'}
+                          {g === 'other' && 'Other 🌈'}
+                          {g === 'none' && 'Secret 🤫'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Personal Bio */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" /> Full Name
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" /> Personal Bio
                     </label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                      placeholder="Apna Pura Naam Likhye"
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      rows={4}
+                      maxLength={160}
+                      className="w-full p-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm font-sans resize-none"
+                      placeholder="Apne baare mein thoda likhein (e.g. Creator, Developer, Writer...)"
                       disabled={loading}
                     />
+                    <div className="flex justify-end text-[10px] text-muted-foreground font-semibold">
+                      {bio.length}/160 characters
+                    </div>
                   </div>
 
-                  {/* Date of Birth */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date of Birth
-                    </label>
-                    <input
-                      type="date"
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm [color-scheme:light] dark:[color-scheme:dark]"
-                      disabled={loading}
-                    />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    <Save className="w-4.5 h-4.5" />
+                    {loading ? 'Saving...' : 'Changes Save Karo'}
+                  </button>
+                </div>
+
+              </form>
+            )}
+
+            {/* CONTACT & RECOVERY TAB */}
+            {activeTab === 'contact' && (
+              <form onSubmit={handleSaveContact} className="space-y-6">
+                
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Contact & Recovery Options</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apni recovery details aur communication options update karein</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Patr Address */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Primary Patr Address
+                      </label>
+                      <input
+                        type="text"
+                        value={user.patrAddress}
+                        disabled
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm font-mono"
+                      />
+                    </div>
+
+                    {/* Login Email */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5 text-muted-foreground" /> Login Email ID
+                      </label>
+                      <input
+                        type="text"
+                        value={user.email}
+                        disabled
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Recovery Phone */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                        placeholder="+91 XXXXX XXXXX"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {/* Recovery Email */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Email
+                      </label>
+                      <input
+                        type="email"
+                        value={recoveryEmail}
+                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                        placeholder="recovery@example.com"
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* SECTION 2: Contact Info */}
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-bold text-patr-orange uppercase tracking-wider border-b border-border/30 pb-2 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Address & Recovery
-                </h3>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    <Save className="w-4.5 h-4.5" />
+                    {loading ? 'Saving...' : 'Contact Info Save Karo'}
+                  </button>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Patr Address */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Patr Address
-                    </label>
-                    <input
-                      type="text"
-                      value={user.patrAddress}
-                      disabled
-                      className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm font-mono"
-                    />
+              </form>
+            )}
+
+            {/* STORAGE & STATUS TAB */}
+            {activeTab === 'storage' && (
+              <div className="space-y-6">
+                
+                {/* Storage Health */}
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-patr-orange/10 border border-patr-orange/20">
+                      <HardDrive className="w-5 h-5 text-patr-orange" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Storage Allocation</h3>
+                      <p className="text-xs text-muted-foreground">Universal free storage status</p>
+                    </div>
                   </div>
-
-                  {/* Phone Number */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                      placeholder="+91 XXXXX XXXXX"
-                      disabled={loading}
-                    />
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs text-muted-foreground font-semibold">
+                      <span>0.1 MB Used</span>
+                      <span>5.0 GB Total Free (100%)</span>
+                    </div>
+                    <div className="w-full h-3 bg-muted/60 rounded-full overflow-hidden relative shadow-inner">
+                      <div className="w-[1%] h-full bg-gradient-to-r from-patr-orange to-[#FF8C60] rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed font-semibold">
+                      Patr mail accounts ko security, scale aur swift delivery ke liye optimized 5GB high-speed cloud storage free milta hai. 🇮🇳
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* SECTION 3: Metadata */}
-              <div className="space-y-4 pt-2">
-                <h3 className="text-xs font-bold text-patr-orange uppercase tracking-wider border-b border-border/30 pb-2 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5" /> Security Metadata
-                </h3>
+                {/* Account Health & Security Checklist */}
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4.5 h-4.5 text-patr-orange" />
+                    <h3 className="text-sm font-bold text-foreground">Account Health Checklist</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    {/* Item 1: Display Name */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/20">
+                      {user.displayName ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold block">Display Name</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {user.displayName ? 'Name successfully set' : 'Apna naam enter karein'}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="space-y-1.5 max-w-sm">
-                  <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date Joined
-                  </label>
-                  <div className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground flex items-center text-sm">
-                    {formattedDate}
+                    {/* Item 2: Profile Photo */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/20">
+                      {user.photoURL ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold block">Profile Avatar</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {user.photoURL ? 'Avatar uploaded' : 'DP upload karein'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Item 3: Phone linked */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/20">
+                      {user.phoneNumber ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold block">Recovery Phone</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {user.phoneNumber ? 'Phone number linked' : 'Phone verify karein'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Item 4: Security PIN */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/20">
+                      {hasSecurityPin ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold block">Identity Verification PIN</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {hasSecurityPin ? 'PIN successfully configured' : 'Setting Page par PIN set karein'}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-              </div>
 
-              {/* Submit Button */}
-              <div className="pt-4 flex justify-end border-t border-border/30">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex items-center gap-2 px-8 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98] shadow-md shadow-patr-orange/20"
-                >
-                  <Save className="w-4.5 h-4.5" />
-                  {loading ? 'Saving...' : 'Changes Save Karo'}
-                </button>
-              </div>
+                {/* Metadata Details */}
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                  <div>
+                    <h3 className="text-xs font-bold text-patr-orange uppercase tracking-wider border-b border-border/30 pb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" /> Security Metadata
+                    </h3>
+                  </div>
 
-            </form>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80">Date Joined</label>
+                      <div className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground flex items-center text-sm font-semibold select-none">
+                        {formattedDate}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/80">Account Status</label>
+                      <div className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-emerald-500 flex items-center text-sm font-bold select-none">
+                        Active & Secured
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
           </div>
         </div>
 
       </div>
-
 
       {/* Elegant Crop Modal */}
       {cropImageSrc && (
@@ -549,7 +869,7 @@ export default function ProfilePage() {
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin animate-spin-slow" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
