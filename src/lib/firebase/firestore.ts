@@ -181,3 +181,11 @@ export async function createUserDoc(userId: string, data: Partial<User>) {
   });
 }
 
+export async function updateUserDoc(userId: string, data: Partial<User>) {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+

@@ -18,6 +18,8 @@ import { OTPInput } from '@/components/auth/OTPInput';
 import { PasswordStrength } from '@/components/auth/PasswordStrength';
 import { registerUser } from '@/lib/firebase/auth';
 import { createUserDoc, userExistsByEmail } from '@/lib/firebase/firestore';
+import { useAuthStore } from '@/store/authStore';
+import type { User } from '@/types/user';
 
 const steps = [
   { label: 'ID Banao' },
@@ -167,6 +169,8 @@ export function RegisterForm() {
     }
   };
 
+  const setUser = useAuthStore((s) => s.setUser);
+
   const onStep4Submit = async (data: any) => {
     setLoading(true);
     setError(null);
@@ -178,12 +182,20 @@ export function RegisterForm() {
         throw new Error(regError);
       }
       if (user) {
-        await createUserDoc(user.uid, {
+        const userData: User = {
           uid: user.uid,
           email,
           displayName: formData.name,
           patrAddress: email,
-        });
+          createdAt: new Date(), // Set temporary local Date for immediate cache
+        };
+        await createUserDoc(user.uid, userData);
+        
+        // Cache in localStorage
+        localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
+        // Instantly set in store to prevent layout spinner
+        setUser(userData);
+
         router.push('/inbox');
       }
     } catch (err: any) {

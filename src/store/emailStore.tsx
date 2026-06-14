@@ -6,7 +6,7 @@ import type { MailboxEntry, EmailCategory, Email } from '@/types/email';
 
 // ─── Store Type ─────────────────────────────────────────
 
-export type EmailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash' | 'archive';
+export type EmailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash' | 'archive' | 'spam';
 
 export interface EmailState {
   emails: MailboxEntry[];

@@ -9,11 +9,16 @@ import Link from 'next/link';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { loginSchema } from '@/lib/validations/auth';
 import { loginUser } from '@/lib/firebase/auth';
+import { useAuthStore } from '@/store/authStore';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import type { User } from '@/types/user';
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const setUser = useAuthStore((s) => s.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +45,22 @@ export function LoginForm() {
     if (loginError) {
       setError(loginError);
       setLoading(false);
-    } else {
+    } else if (user) {
+      try {
+        // Fetch user document immediately from Firestore to populate the cache
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data() as User;
+          // Cache it in localStorage
+          localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
+          // Set user in Zustand store instantly to make transition seamless
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error('Error pre-caching user details:', err);
+      }
       router.push('/inbox');
     }
   };

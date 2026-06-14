@@ -25,13 +25,32 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Try to load user data from cache first for instant loading
+        let cachedUser: User | null = null;
+        try {
+          const cachedData = localStorage.getItem(`patr_user_${firebaseUser.uid}`);
+          if (cachedData) {
+            cachedUser = JSON.parse(cachedData) as User;
+            setUser(cachedUser);
+            setLoading(false);
+          }
+        } catch (e) {
+          console.error('Error reading auth cache:', e);
+        }
+
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userSnap = await getDoc(userDocRef);
           
           if (userSnap.exists()) {
             const userData = userSnap.data() as User;
-            setUser(userData);
+            const userDataStr = JSON.stringify(userData);
+            const cachedDataStr = localStorage.getItem(`patr_user_${firebaseUser.uid}`);
+            
+            if (userDataStr !== cachedDataStr) {
+              localStorage.setItem(`patr_user_${firebaseUser.uid}`, userDataStr);
+              setUser(userData);
+            }
           } else {
             // User exists in Auth but not in Firestore yet
             // Wait for registration flow to complete Firestore write
@@ -39,9 +58,20 @@ export function useAuth() {
           }
         } catch (error) {
           console.error('Error fetching user doc:', error);
-          setUser(null);
+          if (!cachedUser) {
+            setUser(null);
+          }
         }
       } else {
+        // Clear caches on sign out
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('patr_user_')) {
+              localStorage.removeItem(key);
+            }
+          }
+        } catch (e) {}
         setUser(null);
       }
       setLoading(false);

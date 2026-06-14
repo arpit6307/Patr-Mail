@@ -16,6 +16,8 @@ export default function ComposePage() {
   const userEmail = useAuthStore((s) => s.user?.email);
   const userName = useAuthStore((s) => s.user?.displayName);
 
+  const signature = useAuthStore((s) => s.user?.signature);
+
   const [to, setTo] = useState<string[]>([]);
   const [toInput, setToInput] = useState('');
   const [cc, setCc] = useState<string[]>([]);
@@ -28,6 +30,14 @@ export default function ComposePage() {
   const [draftId, setDraftId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize body with signature on mount
+  useEffect(() => {
+    if (signature) {
+      const formattedSig = `<br/><br/>--<br/>${signature.replace(/\n/g, '<br/>')}`;
+      setBody(`<br/><br/>${formattedSig}`);
+    }
+  }, [signature]);
 
   // Auto-save draft timer (30s)
   useEffect(() => {

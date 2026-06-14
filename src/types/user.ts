@@ -8,4 +8,6 @@ export interface User {
   patrAddress: string;     // e.g. arpit@patr.in
   createdAt: Timestamp | Date;
   lastLoginAt?: Timestamp | Date;
+  phoneNumber?: string;
+  signature?: string;
 }

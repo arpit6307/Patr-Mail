@@ -15,6 +15,7 @@ export function ComposeModal() {
   const userId = useAuthStore((s) => s.user?.uid);
   const userEmail = useAuthStore((s) => s.user?.email);
   const userName = useAuthStore((s) => s.user?.displayName);
+  const signature = useAuthStore((s) => s.user?.signature);
   
   const isComposing = useEmailStore((s) => s.isComposing);
   const composeData = useEmailStore((s) => s.composeData);
@@ -40,12 +41,21 @@ export function ComposeModal() {
       setCc(composeData.cc || []);
       setShowCc((composeData.cc?.length ?? 0) > 0);
       setSubject(composeData.subject || '');
-      setBody(composeData.body || '');
+      
+      // If new email (no draftId, no reply/forward IDs), append signature if configured
+      const isNewMail = !composeData.draftId && !composeData.replyToId && !composeData.forwardFromId;
+      if (isNewMail && signature) {
+        const formattedSig = `<br/><br/>--<br/>${signature.replace(/\n/g, '<br/>')}`;
+        setBody(composeData.body ? `${composeData.body}${formattedSig}` : `<br/><br/>${formattedSig}`);
+      } else {
+        setBody(composeData.body || '');
+      }
+
       setDraftId(composeData.draftId);
       setFiles([]);
       setError(null);
     }
-  }, [isComposing, composeData]);
+  }, [isComposing, composeData, signature]);
 
   // Auto-save draft timer (30s)
   useEffect(() => {
