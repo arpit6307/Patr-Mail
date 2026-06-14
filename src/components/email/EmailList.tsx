@@ -14,10 +14,8 @@ interface EmailListProps {
 
 export function EmailList({ emails, loading }: EmailListProps) {
   const userId = useAuthStore((s) => s.user?.uid);
-  const { selectedIds, toggleSelected } = useEmailStore((s) => ({
-    selectedIds: s.selectedIds,
-    toggleSelected: s.toggleSelected,
-  }));
+  const selectedIds = useEmailStore((s) => s.selectedIds);
+  const toggleSelected = useEmailStore((s) => s.toggleSelected);
 
   const handleToggleStar = async (email: MailboxEntry) => {
     if (!userId) return;

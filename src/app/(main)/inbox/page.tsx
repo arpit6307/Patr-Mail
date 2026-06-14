@@ -11,21 +11,12 @@ import { cn } from '@/lib/utils';
 
 export default function InboxPage() {
   const userId = useAuthStore((s) => s.user?.uid);
-  const {
-    currentCategory,
-    selectedIds,
-    setCurrentFolder,
-    setCurrentCategory,
-    selectAll,
-    clearSelection,
-  } = useEmailStore((s) => ({
-    currentCategory: s.currentCategory,
-    selectedIds: s.selectedIds,
-    setCurrentFolder: s.setCurrentFolder,
-    setCurrentCategory: s.setCurrentCategory,
-    selectAll: s.selectAll,
-    clearSelection: s.clearSelection,
-  }));
+  const currentCategory = useEmailStore((s) => s.currentCategory);
+  const selectedIds = useEmailStore((s) => s.selectedIds);
+  const setCurrentFolder = useEmailStore((s) => s.setCurrentFolder);
+  const setCurrentCategory = useEmailStore((s) => s.setCurrentCategory);
+  const selectAll = useEmailStore((s) => s.selectAll);
+  const clearSelection = useEmailStore((s) => s.clearSelection);
 
   // Force folder to 'inbox' when loading this page
   useEffect(() => {

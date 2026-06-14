@@ -11,12 +11,10 @@ import { cn } from '@/lib/utils';
 
 export default function StarredPage() {
   const userId = useAuthStore((s) => s.user?.uid);
-  const { selectedIds, setCurrentFolder, selectAll, clearSelection } = useEmailStore((s) => ({
-    selectedIds: s.selectedIds,
-    setCurrentFolder: s.setCurrentFolder,
-    selectAll: s.selectAll,
-    clearSelection: s.clearSelection,
-  }));
+  const selectedIds = useEmailStore((s) => s.selectedIds);
+  const setCurrentFolder = useEmailStore((s) => s.setCurrentFolder);
+  const selectAll = useEmailStore((s) => s.selectAll);
+  const clearSelection = useEmailStore((s) => s.clearSelection);
 
   // Force folder to 'starred'
   useEffect(() => {

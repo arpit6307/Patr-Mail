@@ -16,11 +16,9 @@ export function ComposeModal() {
   const userEmail = useAuthStore((s) => s.user?.email);
   const userName = useAuthStore((s) => s.user?.displayName);
   
-  const { isComposing, composeData, closeCompose } = useEmailStore((s) => ({
-    isComposing: s.isComposing,
-    composeData: s.composeData,
-    closeCompose: s.closeCompose,
-  }));
+  const isComposing = useEmailStore((s) => s.isComposing);
+  const composeData = useEmailStore((s) => s.composeData);
+  const closeCompose = useEmailStore((s) => s.closeCompose);
 
   const [to, setTo] = useState<string[]>([]);
   const [toInput, setToInput] = useState('');
