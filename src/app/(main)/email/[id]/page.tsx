@@ -17,6 +17,7 @@ export default function EmailDetailPage() {
   
   const [email, setEmail] = useState<Email | null>(null);
   const [mailboxId, setMailboxId] = useState<string | null>(null);
+  const [mailboxLabels, setMailboxLabels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +52,9 @@ export default function EmailDetailPage() {
         }
 
         setEmail(emailData);
-        setMailboxId(snap.docs[0].id);
+        const mailboxDoc = snap.docs[0];
+        setMailboxId(mailboxDoc.id);
+        setMailboxLabels(mailboxDoc.data().labels || []);
       } catch (err) {
         console.error('Error fetching email detail:', err);
         setError('Email load karne mein dikkat aayi.');
@@ -87,5 +90,5 @@ export default function EmailDetailPage() {
     );
   }
 
-  return <EmailView email={email} mailboxId={mailboxId} />;
+  return <EmailView email={email} mailboxId={mailboxId} initialLabels={mailboxLabels} />;
 }

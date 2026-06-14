@@ -189,3 +189,8 @@ export async function updateUserDoc(userId: string, data: Partial<User>) {
   });
 }
 
+export async function updateMailboxEntryLabels(userId: string, mailboxId: string, labels: string[]) {
+  const mailboxRef = doc(db, 'users', userId, 'mailbox', mailboxId);
+  await updateDoc(mailboxRef, { labels });
+}
+

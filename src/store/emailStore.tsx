@@ -26,6 +26,7 @@ export interface EmailState {
   } | null;
   searchQuery: string;
   hasMore: boolean;
+  selectedLabel: string | null;
 }
 
 export interface EmailActions {
@@ -44,6 +45,7 @@ export interface EmailActions {
   setHasMore: (hasMore: boolean) => void;
   updateEmailInList: (emailId: string, updates: Partial<MailboxEntry>) => void;
   removeEmailFromList: (emailId: string) => void;
+  setSelectedLabel: (label: string | null) => void;
 }
 
 export type EmailStore = EmailState & EmailActions;
@@ -62,6 +64,7 @@ export const createEmailStore = (initialState: Partial<EmailState> = {}) => {
     composeData: null,
     searchQuery: '',
     hasMore: false,
+    selectedLabel: null,
     ...initialState,
 
     setEmails: (emails) => set({ emails, isLoading: false }),
@@ -72,7 +75,7 @@ export const createEmailStore = (initialState: Partial<EmailState> = {}) => {
     setCurrentEmail: (currentEmail) => set({ currentEmail }),
 
     setCurrentFolder: (currentFolder) =>
-      set({ currentFolder, emails: [], isLoading: true, selectedIds: new Set() }),
+      set({ currentFolder, emails: [], isLoading: true, selectedIds: new Set(), selectedLabel: null }),
 
     setCurrentCategory: (currentCategory) => set({ currentCategory }),
 
@@ -107,6 +110,8 @@ export const createEmailStore = (initialState: Partial<EmailState> = {}) => {
     setSearchQuery: (searchQuery) => set({ searchQuery }),
 
     setHasMore: (hasMore) => set({ hasMore }),
+
+    setSelectedLabel: (selectedLabel) => set({ selectedLabel }),
 
     updateEmailInList: (emailId, updates) =>
       set((state) => ({

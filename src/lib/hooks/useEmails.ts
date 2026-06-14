@@ -13,6 +13,7 @@ export function useEmails() {
   const emails = useEmailStore((s) => s.emails);
   const currentFolder = useEmailStore((s) => s.currentFolder);
   const currentCategory = useEmailStore((s) => s.currentCategory);
+  const selectedLabel = useEmailStore((s) => s.selectedLabel);
   const setEmails = useEmailStore((s) => s.setEmails);
   const isLoading = useEmailStore((s) => s.isLoading);
   const setLoading = useEmailStore((s) => s.setLoading);
@@ -40,5 +41,9 @@ export function useEmails() {
     return () => unsubscribe();
   }, [userId, currentFolder, currentCategory, setEmails, setLoading]);
 
-  return { emails, loading: isLoading, hasMore };
+  const filteredEmails = selectedLabel
+    ? emails.filter((email) => email.labels?.includes(selectedLabel))
+    : emails;
+
+  return { emails: filteredEmails, loading: isLoading, hasMore };
 }

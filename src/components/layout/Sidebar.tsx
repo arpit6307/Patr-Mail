@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Inbox,
   Send,
@@ -13,10 +14,15 @@ import {
   Settings,
   PenSquare,
   AlertTriangle,
+  X,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
 import { useEmailStore } from '@/store/emailStore';
+import { useAuthStore } from '@/store/authStore';
+import { updateUserDoc } from '@/lib/firebase/firestore';
+
 
 interface SidebarLink {
   label: string;
@@ -45,6 +51,94 @@ export function Sidebar() {
   const isMobile = useUIStore((s) => s.isMobile);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const openCompose = useEmailStore((s) => s.openCompose);
+
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  const selectedLabel = useEmailStore((s) => s.selectedLabel);
+  const setSelectedLabel = useEmailStore((s) => s.setSelectedLabel);
+  const router = useRouter();
+
+  // Quick Label States
+  const [isAdding, setIsAdding] = useState(false);
+  const [newLabelName, setNewLabelName] = useState('');
+  const [selectedColor, setSelectedColor] = useState('bg-blue-500');
+
+  const defaultLabels = [
+    { name: 'Work', color: 'bg-blue-500' },
+    { name: 'Personal', color: 'bg-green-500' },
+    { name: 'Finance', color: 'bg-yellow-500' },
+  ];
+
+  const currentLabels = user?.labels || defaultLabels;
+
+  const handleCreateLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLabelName.trim() || !user) return;
+
+    const newLabel = {
+      name: newLabelName.trim(),
+      color: selectedColor,
+    };
+
+    const updatedLabels = [...(user.labels || defaultLabels), newLabel];
+
+    try {
+      // 1. Update Firestore
+      await updateUserDoc(user.uid, { labels: updatedLabels });
+      
+      // 2. Update Zustand store & LocalStorage cache
+      const updatedUser = {
+        ...user,
+        labels: updatedLabels,
+      };
+      setUser(updatedUser);
+      localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(updatedUser));
+
+      // Reset states
+      setNewLabelName('');
+      setIsAdding(false);
+      setSelectedColor('bg-blue-500');
+    } catch (err) {
+      console.error('Error creating label:', err);
+    }
+  };
+
+  const handleDeleteLabel = async (labelName: string) => {
+    if (!user) return;
+    const updatedLabels = currentLabels.filter((l) => l.name !== labelName);
+
+    try {
+      // If the currently selected label is deleted, clear the selection
+      if (selectedLabel === labelName) {
+        setSelectedLabel(null);
+      }
+
+      // 1. Update Firestore
+      await updateUserDoc(user.uid, { labels: updatedLabels });
+      
+      // 2. Update Zustand store & LocalStorage cache
+      const updatedUser = {
+        ...user,
+        labels: updatedLabels,
+      };
+      setUser(updatedUser);
+      localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('Error deleting label:', err);
+    }
+  };
+
+  const handleLabelClick = (labelName: string) => {
+    if (selectedLabel === labelName) {
+      setSelectedLabel(null);
+    } else {
+      setSelectedLabel(labelName);
+      if (pathname !== '/inbox') {
+        router.push('/inbox');
+      }
+    }
+  };
 
   // Hardcoded counts for now (will come from realtime later)
   const inboxCount = 0;
@@ -125,23 +219,89 @@ export function Sidebar() {
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Labels
               </span>
-              <button className="text-xs text-primary hover:underline">
-                + New
+              <button
+                onClick={() => setIsAdding(!isAdding)}
+                className="text-xs text-patr-orange font-bold hover:underline flex items-center gap-0.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> New
               </button>
             </div>
+
+            {/* Quick add label inline form */}
+            {isAdding && (
+              <form onSubmit={handleCreateLabel} className="px-3 py-2 border border-border/60 rounded-xl bg-muted/10 mx-2 my-1.5 space-y-2 animate-fade-in select-none">
+                <input
+                  type="text"
+                  value={newLabelName}
+                  onChange={(e) => setNewLabelName(e.target.value)}
+                  placeholder="Label name..."
+                  className="w-full bg-background border border-border/60 rounded-lg h-8 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-patr-orange text-foreground placeholder:text-muted-foreground"
+                  autoFocus
+                  required
+                />
+                
+                {/* Color Dots */}
+                <div className="flex justify-between items-center gap-1.5">
+                  <div className="flex gap-1">
+                    {['bg-blue-500', 'bg-emerald-500', 'bg-yellow-500', 'bg-rose-500', 'bg-purple-500'].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={cn(
+                          "w-3.5 h-3.5 rounded-full border border-transparent transition-all",
+                          color,
+                          selectedColor === color && "ring-2 ring-patr-orange ring-offset-1 ring-offset-background scale-110"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdding(false)}
+                      className="text-[10px] text-muted-foreground font-semibold hover:underline"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="text-[10px] text-patr-orange font-bold hover:underline"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
             <div className="space-y-0.5">
-              {[
-                { name: 'Work', color: 'bg-blue-500' },
-                { name: 'Personal', color: 'bg-green-500' },
-                { name: 'Finance', color: 'bg-yellow-500' },
-              ].map((label) => (
-                <button
+              {currentLabels.map((label) => (
+                <div
                   key={label.name}
-                  className="sidebar-item w-full text-left"
+                  onClick={() => handleLabelClick(label.name)}
+                  className={cn(
+                    "group/item flex items-center justify-between px-3 py-1 rounded-lg hover:bg-muted/30 text-foreground transition-all cursor-pointer select-none mx-1",
+                    selectedLabel === label.name && "bg-patr-orange/10 text-patr-orange font-semibold hover:bg-patr-orange/15"
+                  )}
                 >
-                  <span className={cn('w-3 h-3 rounded-full shrink-0', label.color)} />
-                  <span className="flex-1 truncate">{label.name}</span>
-                </button>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', label.color)} />
+                    <span className="flex-1 truncate text-sm">{label.name}</span>
+                  </div>
+                  
+                  {/* Delete button (hover visible) */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteLabel(label.name);
+                    }}
+                    className="p-1 rounded opacity-0 group-hover/item:opacity-100 hover:bg-muted/80 text-muted-foreground hover:text-red-500 transition-all shrink-0"
+                    title="Delete label"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -184,3 +344,4 @@ export function Sidebar() {
     </>
   );
 }
+

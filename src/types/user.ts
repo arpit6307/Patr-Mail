@@ -14,4 +14,7 @@ export interface User {
   vacationSubject?: string;
   vacationMessage?: string;
   dob?: string;
+  labels?: { name: string; color: string }[];
 }
+
+

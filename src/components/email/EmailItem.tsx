@@ -5,6 +5,7 @@ import { Star, Paperclip } from 'lucide-react';
 import type { MailboxEntry } from '@/types/email';
 import { formatEmailDate, getInitials, getAvatarColor, cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
 
 interface EmailItemProps {
   email: MailboxEntry;
@@ -21,6 +22,8 @@ export function EmailItem({
 }: EmailItemProps) {
   const router = useRouter();
   const density = useUIStore((s) => s.density);
+  const user = useAuthStore((s) => s.user);
+  const customLabels = user?.labels || [];
 
   const handleRowClick = () => {
     router.push(`/email/${email.emailId}`);
@@ -109,15 +112,36 @@ export function EmailItem({
 
         {/* Subject & Preview */}
         <div className="min-w-0 md:col-span-3 flex items-center gap-2">
-          <p className={cn(textClass, "truncate")}>
-            <span className={cn('text-foreground', !email.isRead ? 'font-semibold' : 'font-normal')}>
-              {email.subject || '(No Subject)'}
-            </span>
-            <span className="text-muted-foreground/80 font-normal">
-              {' — '}
-              {email.preview}
-            </span>
-          </p>
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <p className={cn(textClass, "truncate flex-1")}>
+              <span className={cn('text-foreground', !email.isRead ? 'font-semibold' : 'font-normal')}>
+                {email.subject || '(No Subject)'}
+              </span>
+              <span className="text-muted-foreground/80 font-normal">
+                {' — '}
+                {email.preview}
+              </span>
+            </p>
+            {email.labels && email.labels.length > 0 && (
+              <div className="flex gap-1 shrink-0 select-none overflow-x-auto scrollbar-none">
+                {email.labels.map((lbl) => {
+                  const configuredLabel = customLabels.find((l) => l.name === lbl);
+                  const colorClass = configuredLabel?.color || 'bg-muted';
+                  return (
+                    <span
+                      key={lbl}
+                      className={cn(
+                        "px-1.5 py-0.5 rounded text-[10px] font-bold text-white shrink-0 shadow-sm",
+                        colorClass
+                      )}
+                    >
+                      {lbl}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

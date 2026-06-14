@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useEmails } from '@/lib/hooks/useEmails';
 import { EmailList } from '@/components/email/EmailList';
 import { bulkMoveToFolder, bulkMarkRead } from '@/lib/firebase/firestore';
-import { CheckSquare, Square, Archive, Trash2, Mail, RefreshCw, Layers, Users, Megaphone } from 'lucide-react';
+import { CheckSquare, Square, Archive, Trash2, Mail, RefreshCw, Layers, Users, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function InboxPage() {
@@ -17,6 +17,8 @@ export default function InboxPage() {
   const setCurrentCategory = useEmailStore((s) => s.setCurrentCategory);
   const selectAll = useEmailStore((s) => s.selectAll);
   const clearSelection = useEmailStore((s) => s.clearSelection);
+  const selectedLabel = useEmailStore((s) => s.selectedLabel);
+  const setSelectedLabel = useEmailStore((s) => s.setSelectedLabel);
 
   // Force folder to 'inbox' when loading this page
   useEffect(() => {
@@ -142,6 +144,23 @@ export default function InboxPage() {
           );
         })}
       </div>
+
+      {/* Label Filter Info */}
+      {selectedLabel && (
+        <div className="flex items-center gap-2 px-6 py-2.5 bg-patr-orange/[0.04] border-b border-border/30 animate-fade-in select-none">
+          <span className="text-xs font-semibold text-muted-foreground">Filtered by label:</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-patr-orange/15 text-patr-orange border border-patr-orange/25">
+            {selectedLabel}
+            <button
+              onClick={() => setSelectedLabel(null)}
+              className="hover:text-red-500 transition-colors p-0.5"
+              title="Clear Filter"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Email List container */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">

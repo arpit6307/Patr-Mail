@@ -58,6 +58,7 @@ export interface MailboxEntry {
   hasAttachments: boolean;
   category: EmailCategory;
   receivedAt: Timestamp | Date;
+  labels?: string[];
 }
 
 // ─── Compose Data ───────────────────────────────────────
