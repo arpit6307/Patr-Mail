@@ -33,6 +33,14 @@ export async function POST(req: NextRequest) {
     // ── Development: log to console ────────────────────
     console.log(`\n🔐 OTP for ${target}: ${otp} (type: ${type})\n`);
 
+    let sentViaWhatsApp = false;
+
+    // ── Twilio WhatsApp Sending ────────────────────────
+    if (phone) {
+      const { sendWhatsAppOTP } = await import('@/lib/twilio');
+      sentViaWhatsApp = await sendWhatsAppOTP(phone, otp);
+    }
+
     // ── Production: send via Resend ────────────────────
     // const { Resend } = await import('resend');
     // const resend = new Resend(process.env.RESEND_API_KEY);
@@ -46,7 +54,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'OTP bhej diya gaya hai',
+      message: sentViaWhatsApp 
+        ? 'OTP WhatsApp par bhej diya gaya hai!' 
+        : 'OTP bhej diya gaya hai',
       // Only include OTP in development for testing
       ...(process.env.NODE_ENV === 'development' && { otp }),
     });
