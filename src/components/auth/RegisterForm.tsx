@@ -23,7 +23,7 @@ import type { User } from '@/types/user';
 
 const steps = [
   { label: 'ID Banao' },
-  { label: 'Mobile No' },
+  { label: 'Verify Email' },
   { label: 'Verify' },
   { label: 'Password' },
 ];
@@ -42,7 +42,7 @@ export function RegisterForm() {
   const [formData, setFormData] = useState({
     username: '',
     name: '',
-    phone: '',
+    email: '',
     otp: '',
     password: '',
     dob: '',
@@ -66,7 +66,7 @@ export function RegisterForm() {
     formState: { errors: errors2 },
   } = useForm({
     resolver: zodResolver(registerStep2Schema),
-    defaultValues: { phone: formData.phone },
+    defaultValues: { email: formData.email },
   });
 
   // Step 4 Form
@@ -117,14 +117,14 @@ export function RegisterForm() {
     setError(null);
   };
 
-  const onStep2Submit = async (data: { phone: string }) => {
+  const onStep2Submit = async (data: { email: string }) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: data.phone, type: 'register' }),
+        body: JSON.stringify({ email: data.email, type: 'register' }),
       });
       const resData = await res.json();
       if (!res.ok) {
@@ -139,7 +139,7 @@ export function RegisterForm() {
         setDevOtp(null);
       }
 
-      setFormData((prev) => ({ ...prev, phone: data.phone }));
+      setFormData((prev) => ({ ...prev, email: data.email }));
       setStep(3);
     } catch (err: any) {
       setError(err.message);
@@ -156,7 +156,7 @@ export function RegisterForm() {
       const res = await fetch('/api/send-otp', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: formData.phone, code: formData.otp }),
+        body: JSON.stringify({ target: formData.email, code: formData.otp }),
       });
       const resData = await res.json();
       if (!res.ok) {
@@ -189,6 +189,7 @@ export function RegisterForm() {
           displayName: formData.name,
           patrAddress: email,
           dob: formData.dob,
+          recoveryEmail: formData.email,
           createdAt: new Date(), // Set temporary local Date for immediate cache
         };
         await createUserDoc(user.uid, userData);
@@ -338,22 +339,19 @@ export function RegisterForm() {
             className="space-y-4"
           >
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-white/70">Phone Number</label>
+              <label className="text-xs font-semibold text-white/70">Recovery Email ID</label>
               <div className="relative flex items-center">
-                <span className="absolute left-4 text-sm font-semibold text-white/40 select-none">
-                  +91
-                </span>
                 <input
-                  {...reg2('phone')}
-                  type="tel"
-                  placeholder="9876543210"
-                  className="w-full h-11 pl-12 pr-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                  {...reg2('email')}
+                  type="email"
+                  placeholder="onboarding@example.com"
+                  className="w-full h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
                   disabled={loading}
                 />
               </div>
               <p className="text-[10px] text-white/40 mt-1">Verification ke liye ek OTP bheja jayega.</p>
-              {errors2.phone && (
-                <p className="text-xs text-red-400 mt-1">{errors2.phone.message as string}</p>
+              {errors2.email && (
+                <p className="text-xs text-red-400 mt-1">{errors2.email.message as string}</p>
               )}
             </div>
 
@@ -394,7 +392,7 @@ export function RegisterForm() {
             className="space-y-5"
           >
             <div className="text-center space-y-1">
-              <p className="text-sm text-white/70">OTP enter karein jo +91 {formData.phone} par bheja hai</p>
+              <p className="text-sm text-white/70">OTP enter karein jo {formData.email} par bheja hai</p>
               {devOtp && (
                 <div className="mt-2 p-2 bg-patr-orange/10 border border-patr-orange/20 rounded-xl text-xs text-patr-orange font-mono font-bold animate-pulse inline-block mx-auto">
                   [Dev Helper] Aapka OTP hai: {devOtp}
