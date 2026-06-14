@@ -63,9 +63,9 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
 
   const baseUrl = getCleanSupabaseUrl();
   const extension = file.name.split('.').pop() || 'jpg';
-  const filePath = `avatars/${userId}_${Date.now()}.${extension}`;
+  const filePath = `${userId}_${Date.now()}.${extension}`;
 
-  const uploadUrl = `${baseUrl}/storage/v1/object/attachments/${filePath}`;
+  const uploadUrl = `${baseUrl}/storage/v1/object/avatars/${filePath}`;
 
   const response = await fetch(uploadUrl, {
     method: 'POST',
@@ -84,7 +84,7 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   }
 
   // Return public download URL
-  return `${baseUrl}/storage/v1/object/public/attachments/${filePath}`;
+  return `${baseUrl}/storage/v1/object/public/avatars/${filePath}`;
 }
 
 /**

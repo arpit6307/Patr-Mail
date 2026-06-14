@@ -21,6 +21,20 @@ export const registerStep1Schema = z.object({
     .string()
     .min(2, 'Name kam se kam 2 characters ka hona chahiye')
     .max(50, 'Name max 50 characters ka ho sakta hai'),
+  dob: z
+    .string()
+    .min(1, 'Date of Birth enter karna zaroori hai')
+    .refine((val) => {
+      const birthDate = new Date(val);
+      if (isNaN(birthDate.getTime())) return false;
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age >= 18;
+    }, 'Account banane ke liye aapki umar kam se kam 18 saal honi chahiye'),
 });
 
 export const registerStep2Schema = z.object({

@@ -45,6 +45,7 @@ export function RegisterForm() {
     phone: '',
     otp: '',
     password: '',
+    dob: '',
   });
 
   // Step 1 Form
@@ -55,7 +56,7 @@ export function RegisterForm() {
     formState: { errors: errors1 },
   } = useForm({
     resolver: zodResolver(registerStep1Schema),
-    defaultValues: { username: formData.username, name: formData.name },
+    defaultValues: { username: formData.username, name: formData.name, dob: formData.dob },
   });
 
   // Step 2 Form
@@ -109,7 +110,7 @@ export function RegisterForm() {
     return () => clearTimeout(timer);
   }, [usernameVal, step]);
 
-  const onStep1Submit = (data: { username: string; name: string }) => {
+  const onStep1Submit = (data: { username: string; name: string; dob: string }) => {
     if (usernameStatus !== 'available') return;
     setFormData((prev) => ({ ...prev, ...data }));
     setStep(2);
@@ -187,6 +188,7 @@ export function RegisterForm() {
           email,
           displayName: formData.name,
           patrAddress: email,
+          dob: formData.dob,
           createdAt: new Date(), // Set temporary local Date for immediate cache
         };
         await createUserDoc(user.uid, userData);
@@ -265,6 +267,18 @@ export function RegisterForm() {
               />
               {errors1.name && (
                 <p className="text-xs text-red-400 mt-1">{errors1.name.message as string}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-white/70">Date of Birth</label>
+              <input
+                {...reg1('dob')}
+                type="date"
+                className="w-full h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm [color-scheme:dark]"
+              />
+              {errors1.dob && (
+                <p className="text-xs text-red-400 mt-1">{errors1.dob.message as string}</p>
               )}
             </div>
 

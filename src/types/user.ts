@@ -13,4 +13,5 @@ export interface User {
   vacationResponderEnabled?: boolean;
   vacationSubject?: string;
   vacationMessage?: string;
+  dob?: string;
 }

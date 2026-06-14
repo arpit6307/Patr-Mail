@@ -7,6 +7,8 @@ import { updateProfile } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase/config';
 import { User, Phone, Mail, Calendar, Shield, Save, CheckCircle, AlertCircle, HardDrive, Camera, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '@/lib/cropImage';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
@@ -19,6 +21,13 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Cropper states
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [originalFileName, setOriginalFileName] = useState('');
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) return;
     const file = e.target.files?.[0];
@@ -30,25 +39,45 @@ export default function ProfilePage() {
       return;
     }
 
+    setOriginalFileName(file.name);
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setCropImageSrc(reader.result as string);
+    });
+    reader.readAsDataURL(file);
+    // Reset file input value so same file can be selected again
+    e.target.value = '';
+  };
+
+  const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!user || !cropImageSrc || !croppedAreaPixels) return;
+
     setUploading(true);
     setError(null);
     setSuccess(false);
 
     try {
+      // 1. Get cropped image file
+      const croppedFile = await getCroppedImg(cropImageSrc, croppedAreaPixels, originalFileName);
+
       const { uploadAvatar } = await import('@/lib/firebase/storage');
       
-      // 1. Upload to Supabase Storage
-      const photoURL = await uploadAvatar(user.uid, file);
+      // 2. Upload to Supabase Storage
+      const photoURL = await uploadAvatar(user.uid, croppedFile);
 
-      // 2. Update Auth user photoURL
+      // 3. Update Auth user photoURL
       if (firebaseAuth.currentUser) {
         await updateProfile(firebaseAuth.currentUser, { photoURL });
       }
 
-      // 3. Update Firestore user document
+      // 4. Update Firestore user document
       await updateUserDoc(user.uid, { photoURL });
 
-      // 4. Update Zustand state & LocalStorage cache
+      // 5. Update Zustand state & LocalStorage cache
       const updatedUser = {
         ...user,
         photoURL,
@@ -58,6 +87,7 @@ export default function ProfilePage() {
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      setCropImageSrc(null); // Close modal
     } catch (err: any) {
       console.error('Error uploading avatar:', err);
       setError('Profile photo upload karne mein dikkat aayi.');
@@ -326,6 +356,83 @@ export default function ProfilePage() {
         </div>
 
       </div>
+
+      {/* Elegant Crop Modal */}
+      {cropImageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card/95 p-6 backdrop-blur shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center border-b border-border/30 pb-3">
+              <h3 className="text-sm font-bold text-foreground">Adjust & Crop Photo ✂️</h3>
+              <button
+                type="button"
+                onClick={() => setCropImageSrc(null)}
+                className="text-muted-foreground hover:text-foreground text-xs font-bold transition-all"
+              >
+                Close
+              </button>
+            </div>
+            
+            {/* Cropper Container */}
+            <div className="relative w-full h-80 rounded-xl overflow-hidden bg-black/50 border border-border/40">
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-3">
+              <div className="flex justify-between text-xs font-semibold text-muted-foreground">
+                <span>Zoom</span>
+                <span>{Math.round(zoom * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-label="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-1.5 rounded-lg bg-muted accent-patr-orange cursor-pointer"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCropImageSrc(null)}
+                className="flex-1 h-11 rounded-xl border border-border bg-background hover:bg-muted text-foreground text-sm font-semibold transition-all active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCropSave}
+                disabled={uploading}
+                className="flex-1 h-11 rounded-xl bg-patr-orange hover:bg-[#E55A25] text-white text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin animate-spin-slow" />
+                    Saving...
+                  </>
+                ) : (
+                  'Crop & Save Karo'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
