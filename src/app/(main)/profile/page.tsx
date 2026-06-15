@@ -27,9 +27,10 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatFileSize } from '@/lib/utils';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '@/lib/cropImage';
+import { IdentityPINSetup } from '@/components/profile/IdentityPINSetup';
 
 type ProfileTab = 'personal' | 'contact' | 'storage';
 
@@ -37,7 +38,17 @@ export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
 
-  const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
+  const [activeTab, setActiveTab] = useState<ProfileTab>(() => {
+    // Check if redirected from settings to set PIN
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('profile_active_tab');
+      if (savedTab === 'contact') {
+        localStorage.removeItem('profile_active_tab'); // Clear after use
+        return 'contact';
+      }
+    }
+    return 'personal';
+  });
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [dob, setDob] = useState('');
@@ -51,6 +62,11 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [hasSecurityPin, setHasSecurityPin] = useState(false);
+
+  // Storage states
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageLimit, setStorageLimit] = useState(5 * 1024 * 1024 * 1024); // 5GB default
+  const [loadingStorage, setLoadingStorage] = useState(true);
 
   // Cropper states
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -128,6 +144,25 @@ export default function ProfilePage() {
       setGender(user.gender || '');
       setBio(user.bio || '');
       setRecoveryEmail(user.recoveryEmail || '');
+
+      if (user.storageLimit) {
+        setStorageLimit(user.storageLimit);
+      }
+
+      // Fetch mailbox size dynamically
+      const fetchStorageSize = async () => {
+        try {
+          const { getUserMailboxSize } = await import('@/lib/firebase/firestore');
+          const size = await getUserMailboxSize(user.uid);
+          setStorageUsed(size);
+        } catch (err) {
+          console.error('Error fetching storage size:', err);
+        } finally {
+          setLoadingStorage(false);
+        }
+      };
+
+      fetchStorageSize();
     }
     
     // Check security PIN existence
@@ -587,87 +622,92 @@ export default function ProfilePage() {
 
             {/* CONTACT & RECOVERY TAB */}
             {activeTab === 'contact' && (
-              <form onSubmit={handleSaveContact} className="space-y-6">
-                
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">Contact & Recovery Options</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apni recovery details aur communication options update karein</p>
+              <div className="space-y-6">
+                <form onSubmit={handleSaveContact} className="space-y-6">
+                  
+                  <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Contact & Recovery Options</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apni recovery details aur communication options update karein</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Patr Address */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Primary Patr Address
+                        </label>
+                        <input
+                          type="text"
+                          value={user.patrAddress}
+                          disabled
+                          className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm font-mono"
+                        />
+                      </div>
+
+                      {/* Login Email */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-muted-foreground" /> Login Email ID
+                        </label>
+                        <input
+                          type="text"
+                          value={user.email}
+                          disabled
+                          className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Recovery Phone */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                          placeholder="+91 XXXXX XXXXX"
+                          disabled={loading}
+                        />
+                      </div>
+
+                      {/* Recovery Email */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Email
+                        </label>
+                        <input
+                          type="email"
+                          value={recoveryEmail}
+                          onChange={(e) => setRecoveryEmail(e.target.value)}
+                          className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                          placeholder="recovery@example.com"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Patr Address */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Primary Patr Address
-                      </label>
-                      <input
-                        type="text"
-                        value={user.patrAddress}
-                        disabled
-                        className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm font-mono"
-                      />
-                    </div>
-
-                    {/* Login Email */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-muted-foreground" /> Login Email ID
-                      </label>
-                      <input
-                        type="text"
-                        value={user.email}
-                        disabled
-                        className="w-full h-11 px-4 rounded-xl border border-border bg-muted/20 text-muted-foreground cursor-not-allowed text-sm"
-                      />
-                    </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex items-center gap-2 px-6 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98]"
+                    >
+                      <Save className="w-4.5 h-4.5" />
+                      {loading ? 'Saving...' : 'Contact Info Save Karo'}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Recovery Phone */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Phone
-                      </label>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                        placeholder="+91 XXXXX XXXXX"
-                        disabled={loading}
-                      />
-                    </div>
+                </form>
 
-                    {/* Recovery Email */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Recovery Email
-                      </label>
-                      <input
-                        type="email"
-                        value={recoveryEmail}
-                        onChange={(e) => setRecoveryEmail(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                        placeholder="recovery@example.com"
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex items-center gap-2 px-6 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all disabled:opacity-50 active:scale-[0.98]"
-                  >
-                    <Save className="w-4.5 h-4.5" />
-                    {loading ? 'Saving...' : 'Contact Info Save Karo'}
-                  </button>
-                </div>
-
-              </form>
+                {/* Identity PIN Setup Component */}
+                <IdentityPINSetup />
+              </div>
             )}
 
             {/* STORAGE & STATUS TAB */}
@@ -686,18 +726,43 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-xs text-muted-foreground font-semibold">
-                      <span>0.1 MB Used</span>
-                      <span>5.0 GB Total Free (100%)</span>
+                  {loadingStorage ? (
+                    <div className="space-y-2 py-4 animate-pulse">
+                      <div className="h-3 bg-muted rounded w-1/3" />
+                      <div className="h-3 bg-muted rounded w-full" />
                     </div>
-                    <div className="w-full h-3 bg-muted/60 rounded-full overflow-hidden relative shadow-inner">
-                      <div className="w-[1%] h-full bg-gradient-to-r from-patr-orange to-[#FF8C60] rounded-full animate-pulse" />
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-xs text-muted-foreground font-semibold">
+                        <span>{formatFileSize(storageUsed)} Used</span>
+                        <span>{formatFileSize(storageLimit)} Total ({((storageLimit - storageUsed) / storageLimit * 100).toFixed(2)}% free)</span>
+                      </div>
+                      <div className="w-full h-3 bg-muted/60 rounded-full overflow-hidden relative shadow-inner">
+                        <div 
+                          className={cn(
+                            "h-full bg-gradient-to-r rounded-full transition-all duration-500",
+                            (storageUsed / storageLimit) * 100 > 90 
+                              ? "from-red-500 to-red-600" 
+                              : (storageUsed / storageLimit) * 100 > 70 
+                                ? "from-amber-500 to-amber-600" 
+                                : "from-patr-orange to-[#FF8C60]"
+                          )}
+                          style={{ width: `${Math.max(Math.min((storageUsed / storageLimit) * 100, 100), 1.5)}%` }}
+                        />
+                      </div>
+                      
+                      {storageUsed >= storageLimit && (
+                        <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xs font-semibold flex items-center gap-2.5 animate-pulse mt-2">
+                          <AlertCircle className="w-4.5 h-4.5 shrink-0" />
+                          <span>⚠️ Storage Limit reached! Aap naye emails receive ya send nahi kar payenge. Space clear karne ke liye purane emails delete karein.</span>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground leading-relaxed font-semibold">
+                        Patr mail accounts ko security, scale aur swift delivery ke liye optimized 5GB high-speed cloud storage free milta hai. 🇮🇳
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed font-semibold">
-                      Patr mail accounts ko security, scale aur swift delivery ke liye optimized 5GB high-speed cloud storage free milta hai. 🇮🇳
-                    </p>
-                  </div>
+                  )}
                 </div>
 
                 {/* Account Health & Security Checklist */}

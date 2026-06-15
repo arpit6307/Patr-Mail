@@ -9,6 +9,7 @@ export interface User {
   createdAt: Timestamp | Date;
   lastLoginAt?: Timestamp | Date;
   phoneNumber?: string;
+  phoneVerified?: boolean;  // Phone verification status
   signature?: string;
   vacationResponderEnabled?: boolean;
   vacationSubject?: string;
@@ -18,6 +19,9 @@ export interface User {
   recoveryEmail?: string;
   gender?: string;
   bio?: string;
+  securityPin?: string;  // Digital Footprint PIN
+  securityPinSet?: boolean;  // Whether PIN has been set (one-time only)
+  storageLimit?: number;     // Custom storage limit in bytes (optional)
 }
 
 

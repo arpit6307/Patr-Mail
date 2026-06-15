@@ -66,8 +66,16 @@ export function getAvatarColor(name: string): string {
 // ─── HTML Sanitization ──────────────────────────────────
 
 export function sanitizeHTML(html: string): string {
-  if (typeof window === 'undefined') return html;
-  return DOMPurify.sanitize(html, {
+  if (!html) return '';
+  
+  // Clean up inline styles that force text colors or backgrounds to ensure high contrast/readability
+  let cleanedHtml = html
+    .replace(/(style\s*=\s*["'][^"']*)color\s*:\s*[^;]+;?/gi, '$1')
+    .replace(/(style\s*=\s*["'][^"']*)background-color\s*:\s*[^;]+;?/gi, '$1')
+    .replace(/style\s*=\s*["']\s*["']/gi, '');
+
+  if (typeof window === 'undefined') return cleanedHtml;
+  return DOMPurify.sanitize(cleanedHtml, {
     ALLOWED_TAGS: [
       'p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'ul', 'ol', 'li',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',

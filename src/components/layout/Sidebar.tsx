@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   X,
   Plus,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
@@ -33,6 +34,7 @@ interface SidebarLink {
 }
 
 const mainLinks: SidebarLink[] = [
+  { label: 'Primary', href: '/primary', icon: Mail },
   { label: 'Inbox', href: '/inbox', icon: Inbox },
   { label: 'Starred', href: '/starred', icon: Star },
   { label: 'Sent', href: '/sent', icon: Send },
@@ -155,7 +157,7 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -163,7 +165,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-[260px] border-r border-border bg-card',
+          'fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-[260px] border-r border-border bg-card print:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           'flex flex-col',
           'lg:translate-x-0',

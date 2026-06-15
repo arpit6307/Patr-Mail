@@ -6,12 +6,15 @@ import type { MailboxEntry } from '@/types/email';
 import { formatEmailDate, getInitials, getAvatarColor, cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
+import { useUserAvatar } from '@/lib/hooks/useUserAvatar';
 
 interface EmailItemProps {
   email: MailboxEntry;
   selected: boolean;
   onToggleSelect: (e: React.MouseEvent) => void;
   onToggleStar: (e: React.MouseEvent) => void;
+  accountEmail?: string;
+  onRowClick?: () => void;
 }
 
 export function EmailItem({
@@ -19,14 +22,21 @@ export function EmailItem({
   selected,
   onToggleSelect,
   onToggleStar,
+  accountEmail,
+  onRowClick,
 }: EmailItemProps) {
   const router = useRouter();
   const density = useUIStore((s) => s.density);
   const user = useAuthStore((s) => s.user);
   const customLabels = user?.labels || [];
+  const { photoURL } = useUserAvatar(email.senderEmail);
 
   const handleRowClick = () => {
-    router.push(`/email/${email.emailId}`);
+    if (onRowClick) {
+      onRowClick();
+    } else {
+      router.push(`/email/${email.emailId}`);
+    }
   };
 
   const initials = getInitials(email.senderName);
@@ -39,9 +49,9 @@ export function EmailItem({
     'py-3.5 gap-4';
   
   const avatarClass = 
-    density === 'compact' ? 'w-7.5 h-7.5 text-[10px]' : 
-    density === 'cozy' ? 'w-8.5 h-8.5 text-[11px]' : 
-    'w-9.5 h-9.5 text-xs';
+    density === 'compact' ? 'w-8 h-8 text-[10px]' : 
+    density === 'cozy' ? 'w-9 h-9 text-[11px]' : 
+    'w-10 h-10 text-xs';
 
   const textClass = 
     density === 'compact' ? 'text-xs' : 'text-sm';
@@ -89,10 +99,27 @@ export function EmailItem({
 
       {/* Avatar */}
       <div
-        className={cn("rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm", avatarClass)}
-        style={{ backgroundColor: avatarBg }}
+        className={cn("rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm overflow-hidden", avatarClass)}
+        style={{ backgroundColor: photoURL ? undefined : avatarBg }}
       >
-        {initials}
+        {photoURL ? (
+          <img
+            src={photoURL}
+            alt={email.senderName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to initials if image fails to load
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.style.backgroundColor = avatarBg;
+                parent.innerText = initials;
+              }
+            }}
+          />
+        ) : (
+          initials
+        )}
       </div>
 
       {/* Main Info */}
@@ -113,6 +140,11 @@ export function EmailItem({
         {/* Subject & Preview */}
         <div className="min-w-0 md:col-span-3 flex items-center gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-2">
+            {accountEmail && (
+              <span className="px-1.5 py-0.5 rounded bg-patr-orange/15 text-patr-orange border border-patr-orange/20 text-[9px] font-black shrink-0 uppercase tracking-wider select-none">
+                {accountEmail.split('@')[0]}
+              </span>
+            )}
             <p className={cn(textClass, "truncate flex-1")}>
               <span className={cn('text-foreground', !email.isRead ? 'font-semibold' : 'font-normal')}>
                 {email.subject || '(No Subject)'}

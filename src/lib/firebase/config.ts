@@ -1,9 +1,9 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -24,7 +24,18 @@ const app = getApps().length > 0
   ? getApp() 
   : (hasFirebaseConfig ? initializeApp(firebaseConfig) : null);
 
-export const db = app ? getFirestore(app) : (null as any);
+let dbInstance: any = null;
+if (app) {
+  try {
+    dbInstance = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+  } catch (error) {
+    dbInstance = getFirestore(app);
+  }
+}
+
+export const db = dbInstance;
 export const rtdb = app && firebaseConfig.databaseURL ? getDatabase(app) : (null as any);
 export const auth = app ? getAuth(app) : (null as any);
 export default app;

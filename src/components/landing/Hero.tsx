@@ -258,6 +258,7 @@ export default function Hero() {
             >
               <Link
                 href="/register"
+                prefetch={true}
                 className="group inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
                            bg-gradient-to-r from-patr-orange to-orange-600 text-white font-bold text-sm
                            shadow-lg shadow-patr-orange/25 hover:shadow-xl hover:shadow-patr-orange/30
@@ -269,6 +270,7 @@ export default function Hero() {
 
               <Link
                 href="/login"
+                prefetch={true}
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full
                            border border-border/80 bg-background/50 hover:bg-muted text-foreground font-semibold text-sm
                            hover:scale-[1.02] active:scale-[0.98] transition-all min-h-[44px]"

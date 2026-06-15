@@ -14,6 +14,29 @@ import {
 } from 'firebase/firestore';
 import { ref, get, set } from 'firebase/database';
 
+async function getMailboxSizeInRoute(userId: string): Promise<number> {
+  try {
+    const q = query(collection(db, 'users', userId, 'mailbox'));
+    const snap = await getDocs(q);
+    let totalSize = 0;
+    snap.forEach((doc) => {
+      const data = doc.data();
+      totalSize += typeof data.size === 'number' ? data.size : 2048;
+    });
+    return totalSize;
+  } catch (error) {
+    console.error('Error fetching mailbox size in route:', error);
+    return 0;
+  }
+}
+
+function calculateEmailSizeInRoute(subject: string, body: string, attachments: any[]): number {
+  const subjectSize = subject?.length || 0;
+  const bodySize = body?.length || 0;
+  const attachmentsSize = attachments?.reduce((sum, att) => sum + (att.fileSize || att.size || 0), 0) || 0;
+  return subjectSize + bodySize + attachmentsSize;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -26,7 +49,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Find Sender User UID in Firestore
+    // 1. Find Sender User UID in Firestore & Check Storage
     const senderQ = query(
       collection(db, 'users'),
       where('patrAddress', '==', from.email),
@@ -39,9 +62,22 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const senderUid = senderSnap.docs[0].id;
+    const senderDoc = senderSnap.docs[0];
+    const senderUid = senderDoc.id;
+    const senderData = senderDoc.data();
+    const senderPhotoURL = senderData.photoURL || '';
 
-    // 2. Validate recipients and collect their UIDs & vacation settings
+    // Sender storage limit check
+    const senderLimit = senderData.storageLimit ?? (5 * 1024 * 1024 * 1024); // 5GB
+    const senderUsed = await getMailboxSizeInRoute(senderUid);
+    if (senderUsed >= senderLimit) {
+      return NextResponse.json(
+        { error: 'Aapka storage full ho chuka hai. Email send karne ke liye space khali karein.' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Validate recipients, check their storage, collect UIDs & vacation settings
     const recipientUids: string[] = [];
     const allRecipients = [...to, ...(cc || [])];
     const vacationRepliesToTrigger: { 
@@ -67,7 +103,19 @@ export async function POST(req: NextRequest) {
       }
       const recDoc = recSnap.docs[0];
       const recData = recDoc.data();
-      recipientUids.push(recDoc.id);
+      const recUid = recDoc.id;
+
+      // Recipient storage check
+      const recLimit = recData.storageLimit ?? (5 * 1024 * 1024 * 1024);
+      const recUsed = await getMailboxSizeInRoute(recUid);
+      if (recUsed >= recLimit) {
+        return NextResponse.json(
+          { error: `Recipient "${recipient.email}" ka storage full hai, new emails receive nahi ho sakte.` },
+          { status: 400 }
+        );
+      }
+
+      recipientUids.push(recUid);
 
       // Add to vacation responder trigger list if enabled and we are not replying to ourselves
       if (
@@ -77,7 +125,7 @@ export async function POST(req: NextRequest) {
         recipient.email !== from.email
       ) {
         vacationRepliesToTrigger.push({
-          recipientUid: recDoc.id,
+          recipientUid: recUid,
           recipientAddress: recipient.email,
           recipientName: recData.displayName || recipient.email.split('@')[0],
           subject: recData.vacationSubject,
@@ -86,9 +134,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Calculate size of this email
+    const emailSize = calculateEmailSizeInRoute(subject, emailBody, attachments || []);
+
     // 3. Create the master Email document in /emails
     const newEmailDoc = await addDoc(collection(db, 'emails'), {
-      from,
+      from: {
+        ...from,
+        photoURL: senderPhotoURL,
+      },
       to,
       cc: cc || [],
       subject,
@@ -115,15 +169,17 @@ export async function POST(req: NextRequest) {
       isStarred: false,
       senderName: from.name,
       senderEmail: from.email,
+      senderPhotoURL,
       subject,
       preview: emailBody.replace(/<[^>]*>/g, '').substring(0, 100),
       hasAttachments: (attachments || []).length > 0,
       category: 'primary',
+      size: emailSize,
       receivedAt: serverTimestamp(),
     });
 
     // 4b. Recipients mailbox entries (folder = 'inbox', read = false)
-    recipientUids.forEach((uid, idx) => {
+    recipientUids.forEach((uid) => {
       const recMailboxRef = doc(collection(db, 'users', uid, 'mailbox'));
       batch.set(recMailboxRef, {
         emailId,
@@ -132,10 +188,12 @@ export async function POST(req: NextRequest) {
         isStarred: false,
         senderName: from.name,
         senderEmail: from.email,
+        senderPhotoURL,
         subject,
         preview: emailBody.replace(/<[^>]*>/g, '').substring(0, 100),
         hasAttachments: (attachments || []).length > 0,
         category: 'primary',
+        size: emailSize,
         receivedAt: serverTimestamp(),
       });
     });
@@ -171,12 +229,15 @@ export async function POST(req: NextRequest) {
     // 6. Trigger vacation auto-replies asynchronously/sequentially
     for (const reply of vacationRepliesToTrigger) {
       try {
+        const autoReplyBodyText = `<div style="font-family: sans-serif; line-height: 1.5; color: #333; white-space: pre-wrap;">${reply.message}</div><br/><hr/><div style="color: #888; font-size: 11px; font-style: italic;">This is an automated vacation reply from Patr. 🇮🇳</div>`;
+        const autoReplySize = `Auto-Reply: ${reply.subject}`.length + autoReplyBodyText.length;
+
         const autoReplyDoc = await addDoc(collection(db, 'emails'), {
           from: { email: reply.recipientAddress, name: reply.recipientName },
           to: [{ email: from.email, name: from.name }],
           cc: [],
           subject: `Auto-Reply: ${reply.subject}`,
-          body: `<div style="font-family: sans-serif; line-height: 1.5; color: #333; white-space: pre-wrap;">${reply.message}</div><br/><hr/><div style="color: #888; font-size: 11px; font-style: italic;">This is an automated vacation reply from Patr. 🇮🇳</div>`,
+          body: autoReplyBodyText,
           attachments: [],
           isRead: false,
           isStarred: false,
@@ -201,6 +262,7 @@ export async function POST(req: NextRequest) {
           preview: reply.message.substring(0, 100),
           hasAttachments: false,
           category: 'primary',
+          size: autoReplySize,
           receivedAt: serverTimestamp(),
         });
 
@@ -217,6 +279,7 @@ export async function POST(req: NextRequest) {
           preview: reply.message.substring(0, 100),
           hasAttachments: false,
           category: 'primary',
+          size: autoReplySize,
           receivedAt: serverTimestamp(),
         });
 

@@ -38,10 +38,9 @@ export const registerStep1Schema = z.object({
 });
 
 export const registerStep2Schema = z.object({
-  email: z
+  phone: z
     .string()
-    .min(1, 'Email enter karna zaroori hai')
-    .email('Kripya ek valid email ID enter karein'),
+    .regex(/^[6-9]\d{9}$/, 'Kripya ek valid 10-digit mobile number enter karein'),
 });
 
 export const registerStep3Schema = z.object({

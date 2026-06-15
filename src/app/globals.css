@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   :root {
     --font-plus-jakarta: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
@@ -163,4 +167,80 @@
   .backface-hidden {
     backface-visibility: hidden;
   }
+
+  /* Email body content accessibility & readability */
+  .email-body-content {
+    color: hsl(var(--foreground)) !important;
+  }
+  .email-body-content *:not(a):not(a *) {
+    color: inherit !important;
+  }
 }
+
+@media print {
+  /* Dynamic theme variables override - force light mode print */
+  :root, .dark {
+    --background: 0 0% 100% !important;
+    --foreground: 240 10% 10% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 240 10% 10% !important;
+    --border: 240 5% 85% !important;
+    --muted: 240 5% 96% !important;
+    --muted-foreground: 240 5% 40% !important;
+  }
+
+  /* Page margins and layout configuration */
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #111111 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.5 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Prevent awkward page breaks */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  
+  img, table, blockquote, pre {
+    page-break-inside: avoid;
+  }
+
+  /* Simplify links on print */
+  a {
+    color: #111111 !important;
+    text-decoration: none !important;
+  }
+
+  /* Clean print rules for the email body content */
+  .email-body-content {
+    font-family: Georgia, Cambria, "Times New Roman", Times, serif !important;
+    font-size: 11pt !important;
+    color: #111111 !important;
+    line-height: 1.65 !important;
+  }
+
+  .email-body-content p {
+    margin-bottom: 1.25em !important;
+  }
+
+  .email-body-content * {
+    color: #111111 !important;
+  }
+
+  /* Double border effect for letterhead separator */
+  .print-double-border {
+    border-bottom: 3px double #111111 !important;
+  }
+}
+
+
+
+

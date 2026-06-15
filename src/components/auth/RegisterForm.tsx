@@ -3,49 +3,67 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertCircle, Check, X, ArrowRight, ArrowLeft } from 'lucide-react';
-import {
-  registerStep1Schema,
-  registerStep2Schema,
-  registerStep3Schema,
-  registerStep4Schema,
-} from '@/lib/validations/auth';
-import { OTPInput } from '@/components/auth/OTPInput';
+import { Loader2, AlertCircle, Check, X, ArrowRight, ArrowLeft, Eye, EyeOff, Shield } from 'lucide-react';
+import { z } from 'zod';
 import { PasswordStrength } from '@/components/auth/PasswordStrength';
+import { createUserDoc, userExistsByEmail, userExistsByPhone } from '@/lib/firebase/firestore';
 import { registerUser } from '@/lib/firebase/auth';
-import { createUserDoc, userExistsByEmail } from '@/lib/firebase/firestore';
 import { useAuthStore } from '@/store/authStore';
 import type { User } from '@/types/user';
 
+// 3-step registration schema
+const step1Schema = z.object({
+  username: z.string().min(3, 'Username kamse kam 3 characters ka hona chahiye').max(20),
+  name: z.string().min(2, 'Naam kamse kam 2 characters ka hona chahiye'),
+  dob: z.string().min(1, 'Date of birth zaroori hai'),
+});
+
+const step2Schema = z.object({
+  phone: z.string().regex(/^[0-9]{10}$/, 'Phone number 10 digits ka hona chahiye'),
+  agreeTerms: z.boolean().refine((val) => val === true, {
+    message: 'Terms & Conditions accept karna zaroori hai',
+  }),
+});
+
+const step3Schema = z.object({
+  password: z.string().min(6, 'Password kamse kam 6 characters ka hona chahiye'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords match nahi ho rahe',
+  path: ['confirmPassword'],
+});
+
 const steps = [
   { label: 'ID Banao' },
-  { label: 'Verify Email' },
-  { label: 'Verify' },
+  { label: 'Phone & Verify' },
   { label: 'Password' },
 ];
 
 export function RegisterForm() {
   const router = useRouter();
+  const setUser = useAuthStore((s) => s.setUser);
+  
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Real-time username availability check
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  // Form values accumulated across steps
+  // Form values
   const [formData, setFormData] = useState({
     username: '',
     name: '',
-    email: '',
-    otp: '',
-    password: '',
     dob: '',
+    phone: '',
+    agreeTerms: false,
+    password: '',
   });
 
   // Step 1 Form
@@ -53,9 +71,10 @@ export function RegisterForm() {
     register: reg1,
     handleSubmit: handleS1,
     watch: watch1,
+    setValue: setVal1,
     formState: { errors: errors1 },
   } = useForm({
-    resolver: zodResolver(registerStep1Schema),
+    resolver: zodResolver(step1Schema),
     defaultValues: { username: formData.username, name: formData.name, dob: formData.dob },
   });
 
@@ -65,23 +84,23 @@ export function RegisterForm() {
     handleSubmit: handleS2,
     formState: { errors: errors2 },
   } = useForm({
-    resolver: zodResolver(registerStep2Schema),
-    defaultValues: { email: formData.email },
+    resolver: zodResolver(step2Schema),
+    defaultValues: { phone: formData.phone, agreeTerms: formData.agreeTerms },
   });
 
-  // Step 4 Form
+  // Step 3 Form
   const {
-    register: reg4,
-    handleSubmit: handleS4,
-    watch: watch4,
-    formState: { errors: errors4 },
+    register: reg3,
+    handleSubmit: handleS3,
+    watch: watch3,
+    formState: { errors: errors3 },
   } = useForm({
-    resolver: zodResolver(registerStep4Schema),
+    resolver: zodResolver(step3Schema),
     defaultValues: { password: formData.password, confirmPassword: '' },
   });
 
   const usernameVal = watch1('username');
-  const watchPassword = watch4('password');
+  const watchPassword = watch3('password');
 
   // Debounced username availability check
   useEffect(() => {
@@ -89,6 +108,7 @@ export function RegisterForm() {
     
     if (!usernameVal || usernameVal.length < 3) {
       setUsernameStatus('idle');
+      setSuggestions([]);
       return;
     }
 
@@ -98,11 +118,46 @@ export function RegisterForm() {
         const taken = await userExistsByEmail(`${usernameVal.trim()}@patr.in`);
         if (step === 1) {
           setUsernameStatus(taken ? 'taken' : 'available');
+          if (taken) {
+            const base = usernameVal.trim().toLowerCase();
+            const candidates = [
+              `${base}${Math.floor(10 + Math.random() * 90)}`,
+              `${base}2026`,
+              `${base}in`,
+              `${base}${Math.floor(10 + Math.random() * 90)}`,
+              `${base}99`,
+              `${base}88`,
+              `${base}77`,
+              `patr${base}`,
+            ];
+            const uniqueCandidates = Array.from(new Set(candidates)).filter(
+              (c) => c.length >= 3 && c !== base
+            );
+            
+            // Check availability in parallel
+            const checkedCandidates = await Promise.all(
+              uniqueCandidates.map(async (c) => {
+                const isTaken = await userExistsByEmail(`${c}@patr.in`);
+                return { candidate: c, isTaken };
+              })
+            );
+            
+            // Filter available, slice top 3
+            const available = checkedCandidates
+              .filter((c) => !c.isTaken)
+              .map((c) => c.candidate)
+              .slice(0, 3);
+              
+            setSuggestions(available);
+          } else {
+            setSuggestions([]);
+          }
         }
       } catch (err) {
         console.error('Error checking username:', err);
         if (step === 1) {
           setUsernameStatus('idle');
+          setSuggestions([]);
         }
       }
     }, 500);
@@ -110,99 +165,107 @@ export function RegisterForm() {
     return () => clearTimeout(timer);
   }, [usernameVal, step]);
 
+  const handleSelectSuggestion = (suggestedUsername: string) => {
+    setVal1('username', suggestedUsername, { shouldValidate: true });
+    setUsernameStatus('available');
+    setSuggestions([]);
+  };
+
   const onStep1Submit = (data: { username: string; name: string; dob: string }) => {
     if (usernameStatus !== 'available') return;
+    
+    // Age validation
+    const birthDate = new Date(data.dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (age < 18) {
+      setError('Aapki umar kam se kam 18 saal honi chahiye.');
+      return;
+    }
+    
     setFormData((prev) => ({ ...prev, ...data }));
     setStep(2);
     setError(null);
   };
 
-  const onStep2Submit = async (data: { email: string }) => {
+  const onStep2Submit = async (data: { phone: string; agreeTerms: boolean }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, type: 'register' }),
-      });
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || 'OTP bhejne mein dikkat aayi');
+      const exists = await userExistsByPhone(`+91${data.phone}`);
+      if (exists) {
+        setError('Yeh phone number pehle se kisi account ke sath registered hai.');
+        setLoading(false);
+        return;
       }
-      
-      // For development, if OTP is returned, auto-log or let the user know
-      if (resData.otp) {
-        console.log('DEV ONLY OTP:', resData.otp);
-        setDevOtp(resData.otp);
-      } else {
-        setDevOtp(null);
-      }
-
-      setFormData((prev) => ({ ...prev, email: data.email }));
+      setFormData((prev) => ({ ...prev, ...data }));
       setStep(3);
-    } catch (err: any) {
-      setError(err.message);
+      setError(null);
+    } catch (err) {
+      console.error('Error checking phone number:', err);
+      setError('Phone number check karne mein dikkat aayi. Kripya dobara koshish karein.');
     } finally {
       setLoading(false);
     }
   };
 
-  const verifyOTP = async () => {
-    if (formData.otp.length !== 6) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/send-otp', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: formData.email, code: formData.otp }),
-      });
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || 'Galat OTP');
-      }
-      setStep(4);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const setUser = useAuthStore((s) => s.setUser);
-
-  const onStep4Submit = async (data: any) => {
+  const onStep3Submit = async (data: any) => {
     setLoading(true);
     setError(null);
     const email = `${formData.username.trim()}@patr.in`;
     
     try {
-      const { user, error: regError } = await registerUser(email, data.password, formData.name);
-      if (regError) {
-        throw new Error(regError);
-      }
-      if (user) {
-        const userData: User = {
-          uid: user.uid,
-          email,
-          displayName: formData.name,
-          patrAddress: email,
-          dob: formData.dob,
-          recoveryEmail: formData.email,
-          createdAt: new Date(), // Set temporary local Date for immediate cache
-        };
-        await createUserDoc(user.uid, userData);
-        
-        // Cache in localStorage
-        localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
-        // Instantly set in store to prevent layout spinner
-        setUser(userData);
+      // Register user with email and password
+      const { user, error: regError } = await registerUser(email, data.password, formData.name.trim());
 
-        router.push('/inbox');
+      if (regError) {
+        setError(regError);
+        setLoading(false);
+        return;
       }
+
+      if (!user) {
+        setError('Account banane mein dikkat aayi.');
+        setLoading(false);
+        return;
+      }
+
+      // Create user document in Firestore
+      const userData: User = {
+        uid: user.uid,
+        email,
+        displayName: formData.name.trim(),
+        patrAddress: email,
+        dob: formData.dob,
+        phoneNumber: `+91${formData.phone}`,
+        phoneVerified: false,  // Not verified yet
+        securityPinSet: false,  // PIN not set yet
+        createdAt: new Date(),
+      };
+      await createUserDoc(user.uid, userData);
+      
+      // Save account in multi-account list
+      const { saveAccount, encodePassword } = await import('@/lib/multiAccount');
+      saveAccount({
+        uid: user.uid,
+        email: email,
+        passwordBase64: encodePassword(data.password),
+        name: formData.name.trim(),
+        photoURL: '',
+      });
+      
+      // Cache in localStorage
+      localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
+      setUser(userData);
+
+      router.push('/inbox');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Registration error:', err);
+      setError(err.message || 'Account banane mein dikkat aayi.');
       setLoading(false);
     }
   };
@@ -249,6 +312,7 @@ export function RegisterForm() {
 
       {/* Steps Content */}
       <AnimatePresence mode="wait">
+        {/* STEP 1: ID Banao */}
         {step === 1 && (
           <motion.form
             key="step1"
@@ -308,7 +372,26 @@ export function RegisterForm() {
                 </div>
               </div>
               {usernameStatus === 'taken' && (
-                <p className="text-xs text-red-400 mt-1">Yeh Patr ID kisi aur ne le li hai.</p>
+                <div className="space-y-2">
+                  <p className="text-xs text-red-400 mt-1">Yeh Patr ID kisi aur ne le li hai.</p>
+                  {suggestions.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-white/50 font-semibold">Suggested IDs:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(s)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-full bg-white/5 hover:bg-patr-orange/20 border border-white/10 hover:border-patr-orange/50 text-white/80 transition-colors"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
               {usernameStatus === 'available' && (
                 <p className="text-xs text-emerald-400 mt-1">Yeh Patr ID available hai! 🎉</p>
@@ -329,6 +412,7 @@ export function RegisterForm() {
           </motion.form>
         )}
 
+        {/* STEP 2: Phone & Verification Checkbox */}
         {step === 2 && (
           <motion.form
             key="step2"
@@ -339,20 +423,50 @@ export function RegisterForm() {
             className="space-y-4"
           >
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-white/70">Recovery Email ID</label>
+              <label className="text-xs font-semibold text-white/70">Phone Number</label>
               <div className="relative flex items-center">
+                <span className="absolute left-4 text-sm font-semibold text-white/40 select-none">
+                  +91
+                </span>
                 <input
-                  {...reg2('email')}
-                  type="email"
-                  placeholder="onboarding@example.com"
-                  className="w-full h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                  disabled={loading}
+                  {...reg2('phone')}
+                  type="tel"
+                  placeholder="9876543210"
+                  maxLength={10}
+                  className="w-full h-11 pl-12 pr-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
                 />
               </div>
-              <p className="text-[10px] text-white/40 mt-1">Verification ke liye ek OTP bheja jayega.</p>
-              {errors2.email && (
-                <p className="text-xs text-red-400 mt-1">{errors2.email.message as string}</p>
+              {errors2.phone && (
+                <p className="text-xs text-red-400 mt-1">{errors2.phone.message as string}</p>
               )}
+              <p className="text-[10px] text-white/40 mt-1">
+                Recovery aur security ke liye phone number zaroori hai
+              </p>
+            </div>
+
+            {/* Terms & Conditions Checkbox */}
+            <div className="space-y-2 mt-4">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  {...reg2('agreeTerms')}
+                  type="checkbox"
+                  className="w-4 h-4 mt-0.5 text-patr-orange border-white/20 focus:ring-patr-orange rounded bg-white/5"
+                />
+                <span className="text-xs text-white/70 leading-relaxed">
+                  Main confirm karta/karti hoon ki maine <Link href="/terms" className="text-patr-orange hover:underline font-semibold">Terms & Conditions</Link> aur <Link href="/privacy" className="text-patr-orange hover:underline font-semibold">Privacy Policy</Link> padh li hai aur accept karta/karti hoon.
+                </span>
+              </label>
+              {errors2.agreeTerms && (
+                <p className="text-xs text-red-400 mt-1">{errors2.agreeTerms.message as string}</p>
+              )}
+            </div>
+
+            {/* Trust Badge */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+              <p className="text-[10px] text-emerald-400 font-semibold">
+                Aapki personal details end-to-end encrypted rahegi. Humara promise! 🔒
+              </p>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -371,10 +485,13 @@ export function RegisterForm() {
                 className="flex-1 h-11 rounded-xl bg-patr-orange text-white font-bold text-sm hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Checking...
+                  </>
                 ) : (
                   <>
-                    OTP Bhejo
+                    Aage Badho
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -383,30 +500,61 @@ export function RegisterForm() {
           </motion.form>
         )}
 
+        {/* STEP 3: Password */}
         {step === 3 && (
-          <motion.div
+          <motion.form
             key="step3"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-5"
+            onSubmit={handleS3(onStep3Submit)}
+            className="space-y-4"
           >
-            <div className="text-center space-y-1">
-              <p className="text-sm text-white/70">OTP enter karein jo {formData.email} par bheja hai</p>
-              {devOtp && (
-                <div className="mt-2 p-2 bg-patr-orange/10 border border-patr-orange/20 rounded-xl text-xs text-patr-orange font-mono font-bold animate-pulse inline-block mx-auto">
-                  [Dev Helper] Aapka OTP hai: {devOtp}
-                </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-white/70">Password Banao</label>
+              <div className="relative flex items-center">
+                <input
+                  {...reg3('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="w-full h-11 pl-4 pr-12 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 text-white/40 hover:text-white/70 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <PasswordStrength password={watchPassword} />
+              {errors3.password && (
+                <p className="text-xs text-red-400 mt-1">{errors3.password.message as string}</p>
               )}
             </div>
 
-            <div className="flex justify-center">
-              <OTPInput
-                length={6}
-                value={formData.otp}
-                onChange={(val) => setFormData((prev) => ({ ...prev, otp: val }))}
-                disabled={loading}
-              />
+            <div className="space-y-1.5 mt-4">
+              <label className="text-xs font-semibold text-white/70">Password Confirm Karo</label>
+              <div className="relative flex items-center">
+                <input
+                  {...reg3('confirmPassword')}
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className="w-full h-11 pl-4 pr-12 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 text-white/40 hover:text-white/70 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors3.confirmPassword && (
+                <p className="text-xs text-red-400 mt-1">{errors3.confirmPassword.message as string}</p>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -420,76 +568,20 @@ export function RegisterForm() {
                 Peeche Jao
               </button>
               <button
-                type="button"
-                onClick={verifyOTP}
-                disabled={formData.otp.length !== 6 || loading}
-                className="flex-1 h-11 rounded-xl bg-patr-orange text-white font-bold text-sm hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                type="submit"
+                disabled={loading}
+                className="flex-1 h-11 rounded-xl bg-patr-orange text-white font-bold text-sm shadow-lg shadow-patr-orange/20 hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
                   <>
-                    Verify OTP
-                    <ArrowRight className="w-4 h-4" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Account Banna Raha Hai...
                   </>
+                ) : (
+                  'Account Banao 🚀'
                 )}
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {step === 4 && (
-          <motion.form
-            key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            onSubmit={handleS4(onStep4Submit)}
-            className="space-y-4"
-          >
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-white/70">Password Banao</label>
-              <input
-                {...reg4('password')}
-                type="password"
-                placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                disabled={loading}
-              />
-              <PasswordStrength password={watchPassword} />
-              {errors4.password && (
-                <p className="text-xs text-red-400 mt-1">{errors4.password.message as string}</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5 mt-4">
-              <label className="text-xs font-semibold text-white/70">Password Confirm Karo</label>
-              <input
-                {...reg4('confirmPassword')}
-                type="password"
-                placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-xl border border-white/10 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-sm"
-                disabled={loading}
-              />
-              {errors4.confirmPassword && (
-                <p className="text-xs text-red-400 mt-1">{errors4.confirmPassword.message as string}</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 rounded-xl bg-patr-orange text-white font-bold text-sm shadow-lg shadow-patr-orange/20 hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-6"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Account Banna Raha Hai...
-                </>
-              ) : (
-                'Account Banao 🚀'
-              )}
-            </button>
           </motion.form>
         )}
       </AnimatePresence>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore, type LayoutDensity } from '@/store/uiStore';
 import { updateUserDoc } from '@/lib/firebase/firestore';
@@ -35,6 +36,7 @@ import {
   Sparkles,
   Tag,
   Plus,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -119,14 +121,23 @@ export default function SettingsPage() {
     useRef<HTMLInputElement>(null),
   ];
 
-  // Load Security PIN from localStorage
+  // Load Security PIN from localStorage and user profile (real-time sync)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedPin = localStorage.getItem('patr_security_pin') || '1234';
-      setSecurityPin(savedPin);
-      setCurrentPinInput(savedPin);
+      // Priority: User's set PIN > localStorage > Default
+      const userPin = user?.securityPin;
+      const localPin = localStorage.getItem('patr_security_pin');
+      const finalPin = userPin || localPin || '1234';
+      
+      setSecurityPin(finalPin);
+      setCurrentPinInput(finalPin);
+      
+      // Sync localStorage with user's PIN if exists
+      if (userPin && userPin !== localPin) {
+        localStorage.setItem('patr_security_pin', userPin);
+      }
     }
-  }, []);
+  }, [user?.securityPin]);
 
   const handleCreateLabel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -724,40 +735,67 @@ export default function SettingsPage() {
                     <h3 className="text-sm font-bold text-foreground">Identity Verification PIN</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Linked apps aur websites se accounts delete aur deauthorise karne ke liye validation PIN (Default: <strong>1234</strong>)
+                    Linked apps aur websites se accounts delete aur deauthorise karne ke liye validation PIN
                   </p>
 
-                  <div className="flex gap-4 items-center">
-                    <div className="relative max-w-[150px]">
-                      <input
-                        type="password"
-                        maxLength={4}
-                        value={currentPinInput}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setCurrentPinInput(val);
-                        }}
-                        className="w-full h-11 px-4 rounded-xl border border-border bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-patr-orange transition-shadow text-center text-lg tracking-widest font-mono"
-                        placeholder="PIN"
-                      />
+                  {user?.securityPinSet ? (
+                    // PIN already set - Show current status
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center gap-2 text-emerald-500">
+                          <Shield className="w-4 h-4" />
+                          <p className="text-xs font-semibold">
+                            Security PIN successfully set hai aur active hai.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/40">
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">Current PIN:</strong>{' '}
+                          <span className="font-mono text-patr-orange text-base tracking-wider">••••</span>{' '}
+                          <span className="text-[10px]">(hidden for security)</span>
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                        <p className="text-xs text-blue-400 font-semibold">
+                          ℹ️ PIN ko change nahi kar sakte. Yeh Digital Footprint Map mein devices revoke karte waqt verify hoga.
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (currentPinInput.length !== 4) {
-                          setError('PIN 4-digit ka hona chahiye.');
-                          return;
-                        }
-                        localStorage.setItem('patr_security_pin', currentPinInput);
-                        setSecurityPin(currentPinInput);
-                        setSuccess(true);
-                        setTimeout(() => setSuccess(false), 3000);
-                      }}
-                      className="px-5 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all"
-                    >
-                      PIN Save Karo
-                    </button>
-                  </div>
+                  ) : (
+                    // PIN not set - Show setup instruction
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-start gap-2 text-amber-500">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">
+                              Security PIN abhi set nahi hai (Default: <span className="font-mono">1234</span> use ho raha hai)
+                            </p>
+                            <p className="text-amber-500/80">
+                              Apna custom 4-digit PIN set karne ke liye <strong>Profile → Contact & Recovery</strong> section mein jaayen.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/profile"
+                        onClick={() => {
+                          // Auto-switch to contact tab when redirecting
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('profile_active_tab', 'contact');
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 h-11 rounded-xl bg-patr-orange text-white font-semibold text-sm hover:bg-[#E55A25] transition-all active:scale-[0.98]"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                        Profile Mein PIN Set Karo
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 {/* Help & Support */}

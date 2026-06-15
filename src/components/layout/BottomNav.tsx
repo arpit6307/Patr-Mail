@@ -19,7 +19,7 @@ export function BottomNav() {
   const openCompose = useEmailStore((s) => s.openCompose);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 border-t border-border bg-background/95 backdrop-blur-lg lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 border-t border-border bg-background/95 backdrop-blur-lg lg:hidden print:hidden">
       <div className="flex items-center justify-around h-full px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;

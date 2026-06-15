@@ -18,6 +18,8 @@ export function useEmails() {
   const isLoading = useEmailStore((s) => s.isLoading);
   const setLoading = useEmailStore((s) => s.setLoading);
 
+  const searchQuery = useEmailStore((s) => s.searchQuery);
+
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 50;
 
@@ -41,9 +43,25 @@ export function useEmails() {
     return () => unsubscribe();
   }, [userId, currentFolder, currentCategory, setEmails, setLoading]);
 
-  const filteredEmails = selectedLabel
-    ? emails.filter((email) => email.labels?.includes(selectedLabel))
-    : emails;
+  const filteredEmails = emails.filter((email) => {
+    // 1. Label filter
+    if (selectedLabel && !email.labels?.includes(selectedLabel)) {
+      return false;
+    }
+    
+    // 2. Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        email.senderName?.toLowerCase().includes(q) ||
+        email.senderEmail?.toLowerCase().includes(q) ||
+        email.subject?.toLowerCase().includes(q) ||
+        email.preview?.toLowerCase().includes(q)
+      );
+    }
+    
+    return true;
+  });
 
   return { emails: filteredEmails, loading: isLoading, hasMore };
 }

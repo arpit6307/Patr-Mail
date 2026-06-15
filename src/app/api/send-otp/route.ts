@@ -102,8 +102,8 @@ export async function POST(req: NextRequest) {
       message: sentViaEmail 
         ? 'OTP email par bhej diya gaya hai!' 
         : 'OTP bhej diya gaya hai',
-      // Only include OTP in development for testing
-      ...(process.env.NODE_ENV === 'development' && { otp }),
+      // Only include OTP in development if email sending is not active
+      ...(process.env.NODE_ENV === 'development' && !sentViaEmail && { otp }),
     });
   } catch (error) {
     console.error('OTP send error:', error);

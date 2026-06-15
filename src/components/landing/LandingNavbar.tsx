@@ -34,8 +34,9 @@ export default function LandingNavbar({
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
     setDark(isDark);
-
-    const onScroll = () => setScrolled(window.scrollY > 20);
+ 
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -76,6 +77,7 @@ export default function LandingNavbar({
                   <Link
                      key={link.label}
                      href={link.href}
+                     prefetch={link.href.startsWith('/') ? true : undefined}
                      className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors relative group py-2"
                   >
                     {link.label}
@@ -101,6 +103,7 @@ export default function LandingNavbar({
                 {/* CTA */}
                 <Link
                   href="/register"
+                  prefetch={true}
                   className="px-4 py-2 rounded-full bg-gradient-to-r from-patr-orange to-orange-600 text-white font-bold text-xs
                              hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-md shadow-patr-orange/15"
                 >
@@ -195,6 +198,7 @@ export default function LandingNavbar({
                   >
                     <Link
                       href={link.href}
+                      prefetch={link.href.startsWith('/') ? true : undefined}
                       onClick={() => setLocalOpen(false)}
                       className="text-3xl font-black text-foreground hover:text-patr-orange transition-colors flex items-center gap-3 relative group"
                     >
@@ -215,6 +219,7 @@ export default function LandingNavbar({
                 <div className="h-px bg-border/40" />
                 <Link
                   href="/register"
+                  prefetch={true}
                   onClick={() => setLocalOpen(false)}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-patr-orange to-orange-600 text-white font-bold text-base text-center flex items-center justify-center gap-2 shadow-lg shadow-patr-orange/20"
                 >

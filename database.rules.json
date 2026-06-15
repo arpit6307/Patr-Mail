@@ -3,12 +3,25 @@
     "users": {
       "$uid": {
         "unreadCount": {
-          // Only the owner can read their unread count
           ".read": "auth != null && auth.uid == $uid",
-          // Anyone (including API routes) can update the unread count when sending an email
-          ".write": "true"
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "status": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $uid"
+        },
+        "lastSeen": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $uid"
+        },
+        "$other": {
+          ".read": false,
+          ".write": false
         }
       }
-    }
+    },
+    ".read": false,
+    ".write": false
   }
 }

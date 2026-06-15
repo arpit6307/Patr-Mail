@@ -36,7 +36,7 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
 
       {/* Main content area */}
-      <main className="lg:ml-[260px] min-h-[calc(100vh-4rem)] pb-20 lg:pb-0">
+      <main className="lg:ml-[260px] min-h-[calc(100vh-4rem)] pb-20 lg:pb-0 print:ml-0 print:p-0 print:pb-0 print:min-h-0">
         {children}
       </main>
 

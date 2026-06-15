@@ -32,6 +32,7 @@ export default function CTA() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register"
+              prefetch={true}
               className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-xl text-patr-orange bg-white hover:bg-orange-50 transition-colors shadow-md hover:scale-105 duration-300"
             >
               Apna Patr ID Banao
@@ -39,6 +40,7 @@ export default function CTA() {
             </Link>
             <Link
               href="/login"
+              prefetch={true}
               className="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-base font-bold rounded-xl text-white hover:bg-white/10 transition-colors duration-300"
             >
               Login Karo

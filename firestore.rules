@@ -1,37 +1,121 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper to check if user is authenticated
+    
+    // ═══════════════════════════════════════════════════════════════
+    // HELPER FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper to check if the document belongs to the authenticated user
+    // Check if the authenticated user owns the document
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Users collection rules
-    match /users/{userId} {
-      // Anyone can read profiles to check username availability and fetch names/avatars
-      allow read: if true;
-      // Users can only create or update their own profile document
-      allow write: if isOwner(userId);
+    // Check if user is trying to read/write their own data
+    function isSelf() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
 
-      // Mailbox sub-collection rules
+    // Check if email sender is the authenticated user
+    function isSender(senderEmail) {
+      return isAuthenticated() && request.auth.token.email == senderEmail;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // USERS COLLECTION - /users/{userId}
+    // ═══════════════════════════════════════════════════════════════
+    
+    match /users/{userId} {
+      // ───────────────────────────────────────────────────────────
+      // PROFILE DOCUMENT RULES
+      // ───────────────────────────────────────────────────────────
+      
+      // READ: Anyone can read user profiles
+      // Why: For username availability check, display names, avatars
+      allow read: if true;
+      
+      // CREATE: User can create their own profile during registration
+      allow create: if isOwner(userId) 
+        && request.resource.data.uid == userId
+        && request.resource.data.patrAddress is string
+        && request.resource.data.patrAddress.matches('.*@patr\\.in$');
+      
+      // UPDATE: Only owner can update their profile
+      allow update: if isOwner(userId)
+        // Prevent changing critical fields
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.patrAddress == resource.data.patrAddress
+        && request.resource.data.createdAt == resource.data.createdAt;
+      
+      // DELETE: Owner can delete their profile (account deletion)
+      allow delete: if isOwner(userId);
+
+      // ───────────────────────────────────────────────────────────
+      // MAILBOX SUB-COLLECTION - /users/{userId}/mailbox/{mailboxId}
+      // ───────────────────────────────────────────────────────────
+      
       match /mailbox/{mailboxId} {
-        // Users can only read, write or delete their own mailbox entries
-        allow read, write: if isOwner(userId);
+        // READ: Only owner can read their mailbox entries
+        allow read: if isOwner(userId);
+        
+        // CREATE: Any authenticated user can create mailbox entries
+        // Why: When User A sends email to User B, User A creates entry in User B's mailbox
+        allow create: if isAuthenticated()
+          && request.resource.data.emailId is string
+          && request.resource.data.folder is string
+          && request.resource.data.folder in ['inbox', 'sent', 'drafts', 'starred', 'trash', 'archive', 'spam'];
+        
+        // UPDATE: Only owner can update their mailbox entries
+        // Why: Mark as read, star, move to folder, add labels
+        allow update: if isOwner(userId);
+        
+        // DELETE: Only owner can delete their mailbox entries
+        allow delete: if isOwner(userId);
       }
     }
 
-    // Emails collection rules (the master emails)
+    // ═══════════════════════════════════════════════════════════════
+    // EMAILS COLLECTION - /emails/{emailId}
+    // ═══════════════════════════════════════════════════════════════
+    
     match /emails/{emailId} {
-      // Authenticated users can create emails
-      allow create: if isAuthenticated();
+      // CREATE: Any authenticated user can create emails
+      // Validation: Must have sender, recipient, subject
+      allow create: if isAuthenticated()
+        && request.resource.data.from.email is string
+        && request.resource.data.to is list
+        && request.resource.data.to.size() > 0
+        && request.resource.data.subject is string
+        && request.resource.data.body is string
+        && request.resource.data.category in ['primary', 'social', 'promotions'];
       
-      // Authenticated users can read, update, or delete emails
-      allow read, update, delete: if isAuthenticated();
+      // READ: Any authenticated user can read emails
+      // Note: Access control is at mailbox level, not email level
+      // Users can only see emails in their mailbox anyway
+      allow read: if isAuthenticated();
+      
+      // UPDATE: Any authenticated user can update emails
+      // Why: Mark as read, star/unstar across multiple users' mailboxes
+      allow update: if isAuthenticated();
+      
+      // DELETE: Any authenticated user can delete emails
+      // Why: Needed for draft deletion, permanent deletion
+      // Note: This deletes master email, individual users still have mailbox entries
+      allow delete: if isAuthenticated();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DEFAULT DENY ALL OTHER COLLECTIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
+

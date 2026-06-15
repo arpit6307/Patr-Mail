@@ -6,7 +6,7 @@ import { X, Send, Save, Trash2, Paperclip, Loader2, AlertCircle } from 'lucide-r
 import { useAuthStore } from '@/store/authStore';
 import { useEmailStore } from '@/store/emailStore';
 import { validatePatrEmail } from '@/lib/validations/email';
-import { saveDraft } from '@/lib/firebase/firestore';
+import { saveDraft, sendEmail } from '@/lib/firebase/firestore';
 import { uploadAttachment } from '@/lib/firebase/storage';
 import { RichEditor } from './RichEditor';
 import { AttachmentUpload } from './AttachmentUpload';
@@ -117,7 +117,38 @@ export function ComposeModal() {
   };
 
   const handleSend = async () => {
-    if (to.length === 0) {
+    // Auto-add email from toInput if user typed but didn't press Enter
+    let finalTo = [...to];
+    if (toInput.trim()) {
+      const trimmedEmail = toInput.trim();
+      if (!validatePatrEmail(trimmedEmail)) {
+        setError('Sirf @patr.in email IDs hi supported hain.');
+        return;
+      }
+      if (!finalTo.includes(trimmedEmail)) {
+        finalTo.push(trimmedEmail);
+        setTo(finalTo);
+        setToInput('');
+      }
+    }
+
+    // Auto-add CC email from ccInput if user typed but didn't press Enter
+    let finalCc = [...cc];
+    if (ccInput.trim()) {
+      const trimmedCcEmail = ccInput.trim();
+      if (!validatePatrEmail(trimmedCcEmail)) {
+        setError('Sirf @patr.in email IDs hi supported hain.');
+        return;
+      }
+      if (!finalCc.includes(trimmedCcEmail)) {
+        finalCc.push(trimmedCcEmail);
+        setCc(finalCc);
+        setCcInput('');
+      }
+    }
+
+    // Validate after auto-add
+    if (finalTo.length === 0) {
       setError('Kripya kam se kam ek recipient (To) enter karein.');
       return;
     }
@@ -139,31 +170,20 @@ export function ComposeModal() {
         });
       }
 
-      // 2. Call Send Email API
-      const emailPayload = {
-        from: { email: userEmail, name: userName },
-        to: to.map((e) => ({ email: e, name: e.split('@')[0] })),
-        cc: cc.map((e) => ({ email: e, name: e.split('@')[0] })),
+      // 2. Send email using client-side Firestore function
+      await sendEmail(userId!, {
+        from: { email: userEmail || '', name: userName || '' },
+        to: finalTo.map((e) => ({ email: e, name: e.split('@')[0] })),
+        cc: finalCc.map((e) => ({ email: e, name: e.split('@')[0] })),
         subject: subject || '(No Subject)',
         body: body || '',
         attachments: uploadedAttachments,
-        draftId, // Pass draft ID to delete it after sending
-      };
-
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailPayload),
+        draftId,
       });
-
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || 'Email bhejne mein dikkat aayi.');
-      }
 
       closeCompose();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Email bhejne mein dikkat aayi.');
     } finally {
       setLoading(false);
     }

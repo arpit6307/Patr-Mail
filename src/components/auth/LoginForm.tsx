@@ -53,6 +53,17 @@ export function LoginForm() {
         
         if (userSnap.exists()) {
           const userData = userSnap.data() as User;
+          
+          // Save account in multi-account list
+          const { saveAccount, encodePassword } = await import('@/lib/multiAccount');
+          saveAccount({
+            uid: user.uid,
+            email: email,
+            passwordBase64: encodePassword(data.password),
+            name: userData.displayName || user.displayName || 'User',
+            photoURL: userData.photoURL || user.photoURL || '',
+          });
+
           // Cache it in localStorage
           localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
           // Set user in Zustand store instantly to make transition seamless

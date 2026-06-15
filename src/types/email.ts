@@ -24,6 +24,7 @@ export interface Email {
   from: {
     email: string;
     name: string;
+    photoURL?: string;
   };
   to: { email: string; name: string }[];
   cc?: { email: string; name: string }[];
@@ -53,6 +54,7 @@ export interface MailboxEntry {
   isStarred: boolean;
   senderName: string;
   senderEmail: string;
+  senderPhotoURL?: string;
   subject: string;
   preview: string;        // first ~100 chars of textBody
   hasAttachments: boolean;
