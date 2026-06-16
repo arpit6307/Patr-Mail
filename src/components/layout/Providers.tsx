@@ -66,7 +66,9 @@ function AuthGuard({ children }: { children: ReactNode }) {
       try {
         const targetPathname = new URL(url.toString(), window.location.origin).pathname;
         if (targetPathname !== window.location.pathname) {
-          setNavLoading(true);
+          setTimeout(() => {
+            setNavLoading(true);
+          }, 0);
         }
       } catch (err) {
         console.error('Error parsing history URL:', err);
@@ -85,7 +87,9 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
     // 3. Listen to browser Back/Forward navigation
     const handlePopState = () => {
-      setNavLoading(true);
+      setTimeout(() => {
+        setNavLoading(true);
+      }, 0);
     };
     window.addEventListener('popstate', handlePopState);
 
