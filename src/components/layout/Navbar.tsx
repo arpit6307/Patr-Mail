@@ -316,7 +316,7 @@ export function Navbar() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-border bg-card dark:bg-[#10101d] shadow-2xl py-3 select-none text-xs opacity-100 flex flex-col"
+                    className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-border bg-card dark:bg-[#10101d] shadow-2xl py-3 select-none text-xs opacity-100 flex flex-col max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin"
                   >
                     {/* Active Account Info Card */}
                     <div className="px-4 py-3 border-b border-border flex items-center gap-3 bg-muted/20 rounded-t-2xl">

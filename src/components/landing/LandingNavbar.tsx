@@ -172,10 +172,10 @@ export default function LandingNavbar({
                 stiffness: 80,
                 damping: 18,
               }}
-              className="fixed inset-4 z-40 md:hidden bg-card/95 border border-white/[0.08] dark:border-white/[0.05] shadow-2xl rounded-[2.5rem] p-8 flex flex-col justify-between"
+              className="fixed inset-4 z-40 md:hidden bg-card/95 border border-white/[0.08] dark:border-white/[0.05] shadow-2xl rounded-[2.5rem] p-6 flex flex-col overflow-y-auto max-h-[calc(100vh-2rem)] scrollbar-none"
             >
               {/* Menu Header (Top Space Spacer) */}
-              <div className="flex justify-between items-center h-14">
+              <div className="flex justify-between items-center h-14 shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-bold text-patr-orange">पत्र</span>
                   <span className="text-lg font-bold text-foreground">Menu</span>
@@ -183,7 +183,7 @@ export default function LandingNavbar({
               </div>
 
               {/* Staggered Navigation Links */}
-              <div className="flex flex-col gap-6 py-6 my-auto text-left">
+              <div className="flex flex-col gap-6 py-8 text-left">
                 {navLinks.map((link, idx) => (
                   <motion.div
                     key={link.label}
@@ -214,7 +214,7 @@ export default function LandingNavbar({
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="space-y-4"
+                className="space-y-4 mt-auto shrink-0"
               >
                 <div className="h-px bg-border/40" />
                 <Link
