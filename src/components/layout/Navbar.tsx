@@ -316,7 +316,7 @@ export function Navbar() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-border bg-[#10101d] dark:bg-[#10101d] shadow-2xl py-3 select-none text-xs opacity-100 flex flex-col"
+                    className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-border bg-card dark:bg-[#10101d] shadow-2xl py-3 select-none text-xs opacity-100 flex flex-col"
                   >
                     {/* Active Account Info Card */}
                     <div className="px-4 py-3 border-b border-border flex items-center gap-3 bg-muted/20 rounded-t-2xl">
@@ -458,10 +458,10 @@ export function Navbar() {
 
       {isSwitching && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in select-none">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-[#10101d] border border-border shadow-2xl max-w-xs text-center animate-scale-in">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-card dark:bg-[#10101d] border border-border shadow-2xl max-w-xs text-center animate-scale-in">
             <Loader2 className="w-10 h-10 animate-spin text-patr-orange" />
             <div>
-              <p className="text-sm font-bold text-white">Account Badla Ja Raha Hai...</p>
+              <p className="text-sm font-bold text-foreground">Account Badla Ja Raha Hai...</p>
               <p className="text-xs text-muted-foreground mt-1.5 truncate max-w-[200px]">{switchingEmail}</p>
             </div>
           </div>
