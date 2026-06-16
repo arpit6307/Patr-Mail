@@ -11,15 +11,9 @@ interface SplashScreenProps {
 export function SplashScreen({ isLoading }: { isLoading: boolean }) {
   const [show, setShow] = useState(true);
   
-  // Detect active theme dynamically, matching SSR and localStorage state
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('patr-theme');
-      if (saved === 'dark' || saved === 'light') return saved;
-      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-    }
-    return 'dark'; // Fallback for Server-side rendering
-  });
+  // Start with 'dark' on both server and client during hydration to avoid mismatch warnings.
+  // The correct theme will be loaded asynchronously in useEffect immediately after mounting.
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
     // Sync theme on mount
