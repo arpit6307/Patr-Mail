@@ -167,7 +167,7 @@ export function Sidebar() {
         className={cn(
           'fixed left-0 top-16 z-30 h-[calc(100vh-8rem)] lg:h-[calc(100vh-4rem)] w-[260px] border-r border-border bg-card print:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          'flex flex-col',
+          'flex flex-col overflow-y-auto scrollbar-thin',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
@@ -187,7 +187,7 @@ export function Sidebar() {
         </div>
 
         {/* Main links */}
-        <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin">
+        <nav className="flex-1 px-3">
           <div className="space-y-0.5">
             {mainLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -332,7 +332,7 @@ export function Sidebar() {
         </nav>
 
         {/* Settings at bottom */}
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-3 mt-auto shrink-0">
           <Link
             href="/settings"
             data-active={pathname === '/settings'}
