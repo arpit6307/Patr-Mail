@@ -14,12 +14,19 @@ interface ProvidersProps {
   children: ReactNode;
 }
 
+import { SplashScreen } from './SplashScreen';
+
 function AuthGuard({ children }: { children: ReactNode }) {
   // Execute auth listening and routing redirects globally
-  useAuth();
+  const { isLoading } = useAuth();
   useKeyboardShortcuts();
   useNotificationListener();
-  return <>{children}</>;
+  return (
+    <>
+      <SplashScreen isLoading={isLoading} />
+      {children}
+    </>
+  );
 }
 
 export function Providers({ children }: ProvidersProps) {
