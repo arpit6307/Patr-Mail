@@ -43,7 +43,7 @@ export default function SearchPage() {
   return (
     <div className="flex flex-col h-full bg-background animate-fade-in">
       {/* Header Info */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
         <div className="flex items-center gap-2.5">
           <Search className="w-5 h-5 text-patr-orange animate-pulse" />
           <h1 className="text-base font-bold text-foreground">Global Search</h1>

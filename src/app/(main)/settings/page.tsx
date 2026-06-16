@@ -369,11 +369,11 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin bg-background p-6 animate-fade-in">
+    <div className="flex-1 overflow-y-auto scrollbar-thin bg-background p-4 sm:p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Futuristic Header with Background Glow */}
-        <div className="relative p-6 rounded-3xl border border-border/60 bg-gradient-to-r from-card/80 to-card/20 backdrop-blur-md overflow-hidden shadow-sm">
+        <div className="relative p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border/60 bg-gradient-to-r from-card/80 to-card/20 backdrop-blur-md overflow-hidden shadow-sm">
           {/* Neon mesh background glow */}
           <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-patr-orange/10 blur-3xl pointer-events-none" />
           
@@ -442,7 +442,7 @@ export default function SettingsPage() {
               <form onSubmit={handleSaveGeneral} className="space-y-6">
                 
                 {/* Theme Settings */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div>
                     <h3 className="text-sm font-bold text-foreground">Theme Selection</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Light aur Dark themes ke beech switch karein</p>
@@ -482,7 +482,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Layout Density Settings */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div>
                     <h3 className="text-sm font-bold text-foreground">Layout Density</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Mail rows aur list elements ki details density choose karein</p>
@@ -514,7 +514,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Keyboard Shortcuts Settings */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -535,7 +535,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Signature Settings */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Signature className="w-4.5 h-4.5 text-patr-orange" />
                     <h3 className="text-sm font-bold text-foreground">Default Email Signature</h3>
@@ -571,7 +571,7 @@ export default function SettingsPage() {
             {/* NOTIFICATIONS TAB */}
             {activeTab === 'notifications' && (
               <form onSubmit={handleSaveGeneral} className="space-y-6">
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-5 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-5 shadow-sm">
                   <div>
                     <h3 className="text-sm font-bold text-foreground">Alert Preferences</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Choose how you want to be notified of new emails</p>
@@ -633,7 +633,7 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 
                 {/* Vacation Responder */}
-                <form onSubmit={handleSaveGeneral} className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-5 shadow-sm">
+                <form onSubmit={handleSaveGeneral} className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-5 shadow-sm">
                   <div className="flex items-center justify-between border-b border-border/30 pb-3">
                     <div className="flex items-center gap-2">
                       <Plane className="w-5 h-5 text-patr-orange" />
@@ -693,7 +693,7 @@ export default function SettingsPage() {
                 </form>
 
                 {/* Password Reset Section */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4.5 h-4.5 text-patr-orange" />
                     <h3 className="text-sm font-bold text-foreground">Password Reset</h3>
@@ -729,7 +729,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Identity PIN Settings */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <KeyRound className="w-4.5 h-4.5 text-patr-orange" />
                     <h3 className="text-sm font-bold text-foreground">Identity Verification PIN</h3>
@@ -799,7 +799,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Help & Support */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-3 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <HelpCircle className="w-4.5 h-4.5 text-patr-orange" />
                     <h3 className="text-sm font-bold text-foreground">Sahaayata (Support)</h3>
@@ -836,7 +836,7 @@ export default function SettingsPage() {
                   .patr-node-float-3 { animation: patr-float-3 8s infinite ease-in-out; }
                 ` }} />
 
-                <div className="border border-border/60 rounded-3xl bg-card/20 backdrop-blur p-6 space-y-4 shadow-sm relative overflow-hidden">
+                <div className="border border-border/60 rounded-2xl sm:rounded-3xl bg-card/20 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm relative overflow-hidden">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/30 pb-4">
                     <div>
                       <h3 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -858,7 +858,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Interactive Orbital Hub */}
-                  <div className="relative border border-border/40 rounded-2xl bg-black/60 p-6 overflow-hidden min-h-[480px] flex flex-col items-center justify-center">
+                  <div className="relative border border-border/40 rounded-2xl bg-black/60 p-4 sm:p-6 overflow-hidden min-h-[480px] flex flex-col items-center justify-center">
                     {/* Glowing Orbit Rings */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
                       <div className="w-64 h-64 rounded-full border border-dashed border-patr-orange/80 animate-[spin_40s_linear_infinite]" />
@@ -1018,7 +1018,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                   
                   {/* Create Label Form Card (2 cols) */}
-                  <div className="md:col-span-2 border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm h-fit">
+                  <div className="md:col-span-2 border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm h-fit">
                     <div>
                       <h3 className="text-sm font-bold text-foreground">Naya Label Banao</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">Apne emails tag karne ke liye naya label add karein</p>
@@ -1095,7 +1095,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Existing Labels List Card (3 cols) */}
-                  <div className="md:col-span-3 border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm h-fit">
+                  <div className="md:col-span-3 border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm h-fit">
                     <div>
                       <h3 className="text-sm font-bold text-foreground">Current Labels</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">Manage your configured email categories</p>
@@ -1144,7 +1144,7 @@ export default function SettingsPage() {
       {/* 4-Digit Security PIN Verification Modal */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-fade-in">
-          <div className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-card/95 p-6 backdrop-blur shadow-2xl space-y-5 text-center">
+          <div className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-card/95 p-4 sm:p-6 backdrop-blur shadow-2xl space-y-5 text-center">
             
             <div className="flex flex-col items-center space-y-2">
               <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">

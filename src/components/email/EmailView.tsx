@@ -116,21 +116,21 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
   return (
     <div className="flex flex-col bg-gradient-to-br from-background via-background to-muted/30 min-h-screen print:bg-white print:min-h-0">
       {/* Top Action Bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 sticky top-16 bg-background/40 backdrop-blur-md z-20 shadow-sm print:hidden">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-2 sm:py-3 border-b border-border/30 sticky top-16 bg-background/40 backdrop-blur-md z-20 shadow-sm print:hidden gap-2">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           <button
             onClick={handleBack}
-            className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="h-6 w-px bg-border/40 mx-2" />
+          <div className="h-6 w-px bg-border/40 mx-1 sm:mx-2" />
 
           <button
             onClick={() => handleMoveFolder('archive')}
             title="Archive"
-            className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <Archive className="w-5 h-5" />
           </button>
@@ -138,7 +138,7 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
           <button
             onClick={() => handleMoveFolder('trash')}
             title="Delete"
-            className="p-2.5 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-destructive rounded-xl hover:bg-destructive/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -147,14 +147,14 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
             onClick={handleToggleStar}
             title={email.isStarred ? 'Unstar' : 'Star'}
             className={cn(
-              'p-2.5 text-muted-foreground hover:text-amber-500 rounded-xl hover:bg-amber-500/10 transition-all duration-200 active:scale-95 hover:shadow-sm',
+              'p-2 text-muted-foreground hover:text-amber-500 rounded-xl hover:bg-amber-500/10 transition-all duration-200 active:scale-95 hover:shadow-sm',
               email.isStarred && 'text-amber-500 hover:text-amber-600 bg-amber-500/5'
             )}
           >
             <Star className="w-5 h-5" fill={email.isStarred ? 'currentColor' : 'none'} />
           </button>
 
-          <div className="h-6 w-px bg-border/40 mx-2" />
+          <div className="h-6 w-px bg-border/40 mx-1 sm:mx-2" />
 
           {/* Label dropdown button */}
           <div className="relative">
@@ -162,7 +162,7 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
               onClick={() => setShowLabelsDropdown(!showLabelsDropdown)}
               title="Label As"
               className={cn(
-                'p-2.5 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm flex items-center gap-1',
+                'p-2 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm flex items-center gap-1',
                 showLabelsDropdown && 'bg-patr-orange/15 text-patr-orange shadow-inner'
               )}
             >
@@ -201,32 +201,32 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           <button
             onClick={() => handleReply('reply')}
             title="Reply"
-            className="p-2.5 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <CornerUpLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleReply('reply-all')}
             title="Reply All"
-            className="p-2.5 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <ReplyAll className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleReply('forward')}
             title="Forward"
-            className="p-2.5 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-patr-orange rounded-xl hover:bg-patr-orange/10 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <CornerUpRight className="w-5 h-5" />
           </button>
           <button
             onClick={handlePrint}
             title="Print"
-            className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
+            className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95 hover:shadow-sm"
           >
             <Printer className="w-5 h-5" />
           </button>
@@ -234,7 +234,7 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
       </div>
 
       {/* Email Body Area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-6 print:max-w-none print:px-0 print:py-4 print:space-y-4">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 print:max-w-none print:px-0 print:py-4 print:space-y-4">
         
         {/* Print Letterhead/Branding Header */}
         <div className="hidden print:flex items-center justify-between print-double-border pb-4 mb-6">
@@ -257,7 +257,7 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
           
           {/* Subject (Screen only) */}
           <div className="space-y-3 print:hidden">
-            <h1 className="text-3xl font-extrabold text-foreground leading-tight tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-foreground leading-tight tracking-tight">
               {email.subject || '(No Subject)'}
             </h1>
             {labels.length > 0 && (
@@ -330,10 +330,10 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
           </div>
 
           {/* Sender details (Screen only) */}
-          <div className="flex items-start justify-between gap-4 py-2 border-b border-border/20 pb-4 print:hidden">
-            <div className="flex items-center gap-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 py-2 border-b border-border/20 pb-4 print:hidden">
+            <div className="flex items-start gap-3.5 min-w-0">
               <div
-                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-primary/20 overflow-hidden"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-md ring-2 ring-primary/20 overflow-hidden shrink-0"
                 style={{ backgroundColor: photoURL ? undefined : avatarBg }}
               >
                 {photoURL ? (
@@ -354,19 +354,19 @@ export function EmailView({ email, mailboxId, initialLabels = [] }: EmailViewPro
                   initials
                 )}
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                  {email.from.name}
-                  <span className="text-xs font-normal text-muted-foreground">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-foreground flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-1.5 truncate">
+                  <span className="truncate">{email.from.name}</span>
+                  <span className="text-xs font-normal text-muted-foreground truncate max-w-[200px] sm:max-w-none">
                     &lt;{email.from.email}&gt;
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs sm:max-w-none">
                   To: {email.to.map((t) => `${t.name || t.email}`).join(', ')}
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-muted-foreground/80">
+            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground/80 self-end sm:self-start shrink-0">
               {formatFullDate(email.createdAt)}
             </span>
           </div>

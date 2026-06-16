@@ -66,13 +66,13 @@ export function EmailItem({
         !email.isRead && 'bg-primary/5 dark:bg-primary/[0.03]'
       )}
     >
-      {/* Checkbox */}
+      {/* Checkbox (Desktop only) */}
       <div
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelect(e);
         }}
-        className="flex items-center justify-center p-1 cursor-pointer"
+        className="hidden md:flex items-center justify-center p-1 cursor-pointer"
       >
         <input
           type="checkbox"
@@ -82,7 +82,7 @@ export function EmailItem({
         />
       </div>
 
-      {/* Star */}
+      {/* Star (Desktop only) */}
       <button
         type="button"
         onClick={(e) => {
@@ -90,14 +90,14 @@ export function EmailItem({
           onToggleStar(e);
         }}
         className={cn(
-          'p-1 text-muted-foreground hover:text-amber-500 transition-colors',
+          'hidden md:block p-1 text-muted-foreground hover:text-amber-500 transition-colors',
           email.isStarred && 'text-amber-500 hover:text-amber-600'
         )}
       >
         <Star className="w-4.5 h-4.5" fill={email.isStarred ? 'currentColor' : 'none'} />
       </button>
 
-      {/* Avatar */}
+      {/* Avatar (All screens) */}
       <div
         className={cn("rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm overflow-hidden", avatarClass)}
         style={{ backgroundColor: photoURL ? undefined : avatarBg }}
@@ -122,10 +122,79 @@ export function EmailItem({
         )}
       </div>
 
-      {/* Main Info */}
-      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+      {/* Mobile Layout (Visible on mobile/tablet, hidden on desktop) */}
+      <div className="flex-1 min-w-0 flex flex-col gap-1 md:hidden">
+        {/* Line 1: Sender Name & Date */}
+        <div className="flex justify-between items-baseline gap-2">
+          <p className={cn("text-sm text-foreground truncate", !email.isRead ? "font-bold" : "font-semibold")}>
+            {email.senderName}
+          </p>
+          <span className="text-xs text-muted-foreground/80 shrink-0 whitespace-nowrap font-medium">
+            {formatEmailDate(email.receivedAt)}
+          </span>
+        </div>
+
+        {/* Line 2: Subject & Icons */}
+        <div className="flex justify-between items-center gap-2">
+          <p className={cn("text-xs truncate flex-1", !email.isRead ? "font-bold text-foreground" : "text-muted-foreground/90 font-medium")}>
+            {accountEmail && (
+              <span className="px-1.5 py-0.5 rounded bg-patr-orange/15 text-patr-orange border border-patr-orange/20 text-[9px] font-black shrink-0 uppercase tracking-wider select-none mr-1.5">
+                {accountEmail.split('@')[0]}
+              </span>
+            )}
+            {email.subject || '(No Subject)'}
+          </p>
+          <div className="flex items-center gap-2.5 shrink-0">
+            {email.hasAttachments && (
+              <Paperclip className="w-3.5 h-3.5 text-muted-foreground/60" />
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStar(e);
+              }}
+              className={cn(
+                'p-0.5 text-muted-foreground hover:text-amber-500 transition-colors',
+                email.isStarred && 'text-amber-500'
+              )}
+            >
+              <Star className="w-4 h-4" fill={email.isStarred ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        </div>
+
+        {/* Line 3: Preview & Chips */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground/70 truncate flex-1">
+            {email.preview}
+          </p>
+          {email.labels && email.labels.length > 0 && (
+            <div className="flex gap-1 shrink-0 select-none overflow-x-auto scrollbar-none max-w-[120px]">
+              {email.labels.map((lbl) => {
+                const configuredLabel = customLabels.find((l) => l.name === lbl);
+                const colorClass = configuredLabel?.color || 'bg-muted';
+                return (
+                  <span
+                    key={lbl}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[8px] font-bold text-white shrink-0 shadow-sm",
+                      colorClass
+                    )}
+                  >
+                    {lbl}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Layout (Hidden on mobile/tablet, visible on desktop) */}
+      <div className="hidden md:grid flex-1 min-w-0 grid-cols-4 gap-2 items-center">
         {/* Sender Name */}
-        <div className="min-w-0 md:col-span-1">
+        <div className="min-w-0 col-span-1">
           <p
             className={cn(
               textClass,
@@ -138,7 +207,7 @@ export function EmailItem({
         </div>
 
         {/* Subject & Preview */}
-        <div className="min-w-0 md:col-span-3 flex items-center gap-2">
+        <div className="min-w-0 col-span-3 flex items-center gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-2">
             {accountEmail && (
               <span className="px-1.5 py-0.5 rounded bg-patr-orange/15 text-patr-orange border border-patr-orange/20 text-[9px] font-black shrink-0 uppercase tracking-wider select-none">
@@ -177,8 +246,8 @@ export function EmailItem({
         </div>
       </div>
 
-      {/* Right Icons / Date */}
-      <div className="flex items-center gap-3 shrink-0">
+      {/* Desktop Right Icons / Date (Hidden on mobile/tablet, visible on desktop) */}
+      <div className="hidden md:flex items-center gap-3 shrink-0">
         {email.hasAttachments && (
           <Paperclip className="w-4 h-4 text-muted-foreground/60 shrink-0" />
         )}

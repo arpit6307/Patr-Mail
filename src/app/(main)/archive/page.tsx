@@ -52,7 +52,7 @@ export default function ArchivePage() {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Search and refresh bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
         <div className="flex items-center gap-4 flex-1">
           <button
             onClick={handleSelectAllToggle}
@@ -89,7 +89,7 @@ export default function ArchivePage() {
         </button>
       </div>
 
-      <div className="px-6 py-3 border-b border-border/30 bg-card/5">
+      <div className="px-4 sm:px-6 py-3 border-b border-border/30 bg-card/5">
         <h2 className="text-sm font-bold text-foreground">Archived Mails</h2>
       </div>
 

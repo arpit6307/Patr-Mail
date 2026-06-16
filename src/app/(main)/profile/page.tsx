@@ -328,11 +328,11 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin bg-background p-6 animate-fade-in">
+    <div className="flex-1 overflow-y-auto scrollbar-thin bg-background p-4 sm:p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Futuristic Header with Background Glow */}
-        <div className="relative p-6 rounded-3xl border border-border/60 bg-gradient-to-r from-card/80 to-card/20 backdrop-blur-md overflow-hidden shadow-sm">
+        <div className="relative p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border/60 bg-gradient-to-r from-card/80 to-card/20 backdrop-blur-md overflow-hidden shadow-sm">
           {/* Neon mesh background glow */}
           <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-patr-orange/10 blur-3xl pointer-events-none" />
           
@@ -364,7 +364,7 @@ export default function ProfilePage() {
           <div className="w-full lg:w-80 shrink-0 space-y-6 lg:sticky lg:top-20">
             
             {/* Identity Card with radial progress ring */}
-            <div className="border border-border/60 rounded-3xl bg-card/40 backdrop-blur p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
+            <div className="border border-border/60 rounded-2xl sm:rounded-3xl bg-card/40 backdrop-blur p-4 sm:p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
               {/* Radial glow background */}
               <div className="absolute inset-0 bg-gradient-to-b from-patr-orange/[0.03] to-transparent pointer-events-none" />
 
@@ -520,7 +520,7 @@ export default function ProfilePage() {
             {activeTab === 'personal' && (
               <form onSubmit={handleSavePersonal} className="space-y-6">
                 
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-6 shadow-sm">
                   <div>
                     <h3 className="text-sm font-bold text-foreground">Personal Information</h3>
                     <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apna public name, date of birth aur basic information set karein</p>
@@ -624,7 +624,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <form onSubmit={handleSaveContact} className="space-y-6">
                   
-                  <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-6 shadow-sm">
+                  <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-6 shadow-sm">
                     <div>
                       <h3 className="text-sm font-bold text-foreground">Contact & Recovery Options</h3>
                       <p className="text-xs text-muted-foreground mt-0.5 font-semibold">Apni recovery details aur communication options update karein</p>
@@ -714,7 +714,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 
                 {/* Storage Health */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-patr-orange/10 border border-patr-orange/20">
                       <HardDrive className="w-5 h-5 text-patr-orange" />
@@ -765,7 +765,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Account Health & Security Checklist */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4.5 h-4.5 text-patr-orange" />
                     <h3 className="text-sm font-bold text-foreground">Account Health Checklist</h3>
@@ -837,7 +837,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Metadata Details */}
-                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-6 space-y-4 shadow-sm">
+                <div className="border border-border/60 rounded-2xl bg-card/40 backdrop-blur p-4 sm:p-6 space-y-4 shadow-sm">
                   <div>
                     <h3 className="text-xs font-bold text-patr-orange uppercase tracking-wider border-b border-border/30 pb-2 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" /> Security Metadata
@@ -871,7 +871,7 @@ export default function ProfilePage() {
       {/* Elegant Crop Modal */}
       {cropImageSrc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card/95 p-6 backdrop-blur shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
+          <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-card/95 p-4 sm:p-6 backdrop-blur shadow-2xl space-y-6 flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-border/30 pb-3">
               <h3 className="text-sm font-bold text-foreground">Adjust & Crop Photo ✂️</h3>
               <button

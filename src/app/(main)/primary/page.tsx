@@ -162,7 +162,7 @@ export default function PrimaryInboxPage() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/30 bg-background/50 backdrop-blur sticky top-16 z-20">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/30 bg-background/50 backdrop-blur sticky top-16 z-20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-patr-orange/10 flex items-center justify-center text-patr-orange shadow-sm border border-patr-orange/20">
             <Layers className="w-5 h-5" />
@@ -185,7 +185,7 @@ export default function PrimaryInboxPage() {
 
       {/* Logged in accounts badge panel */}
       {accounts.length > 0 && (
-        <div className="px-6 py-2.5 bg-muted/20 border-b border-border/20 flex flex-wrap gap-2 items-center select-none text-[10px] font-bold text-muted-foreground/80">
+        <div className="px-4 sm:px-6 py-2.5 bg-muted/20 border-b border-border/20 flex flex-wrap gap-2 items-center select-none text-[10px] font-bold text-muted-foreground/80">
           <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <span>Connected Accounts:</span>
           {accounts.map((account) => {

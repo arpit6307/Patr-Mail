@@ -212,15 +212,15 @@ export function ComposeModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-card w-full max-w-3xl rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-card w-full h-full sm:h-auto sm:max-w-3xl sm:rounded-2xl border-t sm:border border-border/80 shadow-2xl overflow-hidden flex flex-col max-h-screen sm:max-h-[90vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/20">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border/40 bg-muted/20">
           <h3 className="font-bold text-foreground">Naya Patr Likho</h3>
           <button
             onClick={closeCompose}
@@ -231,7 +231,7 @@ export function ComposeModal() {
         </div>
 
         {/* Form Fields */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4 scrollbar-thin">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3 sm:space-y-4 scrollbar-thin">
           {error && (
             <div className="flex items-center gap-2.5 p-3.5 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 text-sm">
               <AlertCircle className="w-5 h-5 shrink-0" />
@@ -332,7 +332,7 @@ export function ComposeModal() {
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-border/40 bg-muted/10 flex justify-between items-center">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border/40 bg-muted/10 flex justify-between items-center">
           <button
             type="button"
             onClick={closeCompose}

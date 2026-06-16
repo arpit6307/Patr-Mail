@@ -66,7 +66,7 @@ export default function InboxPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Search and refresh bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/40 bg-background/50 backdrop-blur sticky top-16 z-10 gap-4">
         <div className="flex items-center gap-4 flex-1">
           {/* Select Checkbox */}
           <button
@@ -132,7 +132,7 @@ export default function InboxPage() {
                 clearSelection();
               }}
               className={cn(
-                'flex items-center gap-2.5 px-6 py-3.5 border-b-2 font-semibold text-sm transition-all focus:outline-none flex-1 sm:flex-initial text-center justify-center',
+                'flex items-center gap-2 px-3 sm:px-6 py-2.5 sm:py-3.5 border-b-2 font-semibold text-xs sm:text-sm transition-all focus:outline-none flex-1 sm:flex-initial text-center justify-center',
                 active
                   ? 'border-patr-orange text-patr-orange bg-patr-orange/[0.02]'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'
@@ -147,7 +147,7 @@ export default function InboxPage() {
 
       {/* Label Filter Info */}
       {selectedLabel && (
-        <div className="flex items-center gap-2 px-6 py-2.5 bg-patr-orange/[0.04] border-b border-border/30 animate-fade-in select-none">
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 bg-patr-orange/[0.04] border-b border-border/30 animate-fade-in select-none">
           <span className="text-xs font-semibold text-muted-foreground">Filtered by label:</span>
           <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-patr-orange/15 text-patr-orange border border-patr-orange/25">
             {selectedLabel}

@@ -33,7 +33,7 @@ export function RichEditor({ value, onChange, placeholder }: RichEditorProps) {
   return (
     <div className="flex flex-col border border-border/60 rounded-xl overflow-hidden bg-background">
       {/* Toolbar */}
-      <div className="flex items-center gap-1.5 p-2 bg-muted/30 border-b border-border/60">
+      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-muted/30 border-b border-border/60">
         <button
           type="button"
           onClick={() => executeCommand('bold')}
