@@ -65,7 +65,7 @@ export function SplashScreen({ isLoading }: { isLoading: boolean }) {
             }}
             className="relative w-28 h-28 mb-6 p-1.5 bg-gradient-to-tr from-[#FF6B35]/30 to-transparent rounded-3xl border border-white/10 shadow-[0_0_40px_rgba(255,107,53,0.12)] flex items-center justify-center overflow-hidden"
           >
-            <img src="/icon.png" alt="Patr Logo" className="w-20 h-20 object-contain rounded-2xl" />
+            <img src="/logo.png" alt="Patr Logo" className="w-20 h-20 object-contain rounded-2xl" />
           </motion.div>
 
           {/* Brand Heading */}
