@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { updateUserDoc } from '@/lib/firebase/firestore';
+import { updateUserDoc, getUserMailboxSize } from '@/lib/firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase/config';
 import {
@@ -149,10 +149,9 @@ export default function ProfilePage() {
         setStorageLimit(user.storageLimit);
       }
 
-      // Fetch mailbox size dynamically
+      // Fetch mailbox size
       const fetchStorageSize = async () => {
         try {
-          const { getUserMailboxSize } = await import('@/lib/firebase/firestore');
           const size = await getUserMailboxSize(user.uid);
           setStorageUsed(size);
         } catch (err) {
