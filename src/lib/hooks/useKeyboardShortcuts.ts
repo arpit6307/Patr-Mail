@@ -20,7 +20,7 @@ export function useKeyboardShortcuts() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 1. Skip if user is typing in an input, textarea, or editor
       const activeEl = document.activeElement;
-      if (activeEl) {
+      if (activeEl && activeEl.tagName) {
         const tag = activeEl.tagName.toLowerCase();
         const isEditable = activeEl.hasAttribute('contenteditable') || 
                            activeEl.getAttribute('contenteditable') === 'true' ||
@@ -30,6 +30,7 @@ export function useKeyboardShortcuts() {
         }
       }
 
+      if (!e.key) return;
       const key = e.key.toLowerCase();
 
       // Clear 'g' sequence timer if active
