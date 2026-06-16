@@ -165,7 +165,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-[260px] border-r border-border bg-card print:hidden',
+          'fixed left-0 top-16 z-30 h-[calc(100vh-8rem)] lg:h-[calc(100vh-4rem)] w-[260px] border-r border-border bg-card print:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           'flex flex-col',
           'lg:translate-x-0',
