@@ -91,7 +91,7 @@ export default function SearchPage() {
             </div>
             <p className="text-sm font-bold text-foreground">Koi result nahi mila</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed font-medium">
-              Aapke query "{searchQuery}" se match hone wala koi email nahi mila. Dusra keyword use karein.
+              Aapke query &quot;{searchQuery}&quot; se match hone wala koi email nahi mila. Dusra keyword use karein.
             </p>
           </div>
         ) : (
