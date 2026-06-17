@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useEmailStore } from '@/store/emailStore';
 import { useAuthStore } from '@/store/authStore';
 import { useEmails } from '@/lib/hooks/useEmails';
 import { EmailList } from '@/components/email/EmailList';
 import { bulkMoveToFolder, bulkMarkRead } from '@/lib/firebase/firestore';
-import { CheckSquare, Square, Archive, Trash2, Mail, RefreshCw, Layers, Users, Megaphone, X } from 'lucide-react';
+import { CheckSquare, Square, Archive, Trash2, Mail, RefreshCw, Layers, Users, Megaphone, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InboxPage() {
   const userId = useAuthStore((s) => s.user?.uid);
@@ -19,6 +20,40 @@ export default function InboxPage() {
   const clearSelection = useEmailStore((s) => s.clearSelection);
   const selectedLabel = useEmailStore((s) => s.selectedLabel);
   const setSelectedLabel = useEmailStore((s) => s.setSelectedLabel);
+
+  const [showSSOPopup, setShowSSOPopup] = useState(false);
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const target = urlParams.get('redirect_uri');
+      if (target) {
+        setRedirectUri(target);
+        setShowSSOPopup(true);
+      }
+    }
+  }, []);
+
+  const getButtonText = (url: string) => {
+    try {
+      if (url.startsWith('/')) {
+        return 'Go Back to Patr';
+      }
+      const hostname = new URL(url).hostname;
+      if (hostname.includes('indivibe')) return 'Go Back to IndiVibe';
+      const parts = hostname.split('.');
+      const firstPart = parts[0] === 'www' ? parts[1] : parts[0];
+      if (firstPart) {
+        return `Go Back to ${firstPart.charAt(0).toUpperCase() + firstPart.slice(1)}`;
+      }
+      return 'Go Back to App';
+    } catch (e) {
+      return 'Go Back to IndiVibe';
+    }
+  };
+
+  const buttonText = redirectUri ? getButtonText(redirectUri) : '';
 
   // Force folder to 'inbox' when loading this page
   useEffect(() => {
@@ -166,6 +201,50 @@ export default function InboxPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         <EmailList emails={emails} loading={loading} />
       </div>
+
+      {/* SSO Redirection Popup Modal */}
+      <AnimatePresence>
+        {showSSOPopup && redirectUri && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-sm p-6 sm:p-8 rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-2xl shadow-black/80 text-center space-y-6"
+            >
+              {/* Success Badge */}
+              <div className="mx-auto w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+                <Check className="w-7 h-7 animate-pulse" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white">🎉 Account Ready Hai!</h3>
+                <p className="text-xs text-white/50 leading-relaxed">
+                  Congratulations! Aapka Patr ID successfully create ho gaya hai. Wapas app par jaane ke liye niche click karein.
+                </p>
+              </div>
+
+              {/* Neo-brutalist CTA */}
+              <div className="space-y-3 pt-2">
+                <a
+                  href={redirectUri}
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[#FFE834] text-[#111111] border-2 border-[#111111] px-5 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-[3px_3px_0px_#111111] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0px_#111111] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all duration-100 cursor-pointer"
+                >
+                  &larr; {buttonText}
+                </a>
+
+                <button
+                  onClick={() => setShowSSOPopup(false)}
+                  className="w-full h-10 rounded-xl border border-white/10 hover:bg-white/5 text-white/40 hover:text-white/60 font-semibold text-xs transition-all active:scale-[0.98]"
+                >
+                  Close & Stay on Patr
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
