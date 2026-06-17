@@ -56,6 +56,43 @@ export function RegisterForm() {
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
+  // Redirect target detection
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const target = 
+        urlParams.get('redirect_uri') || 
+        urlParams.get('return_to') || 
+        urlParams.get('redirect') || 
+        urlParams.get('callbackUrl') || 
+        urlParams.get('next') || 
+        urlParams.get('continue');
+      setRedirectUri(target);
+    }
+  }, []);
+
+  const getButtonText = (url: string) => {
+    try {
+      if (url.startsWith('/')) {
+        return 'Go Back to Patr';
+      }
+      const hostname = new URL(url).hostname;
+      if (hostname.includes('indivibe')) return 'Go Back to IndiVibe';
+      const parts = hostname.split('.');
+      const firstPart = parts[0] === 'www' ? parts[1] : parts[0];
+      if (firstPart) {
+        return `Go Back to ${firstPart.charAt(0).toUpperCase() + firstPart.slice(1)}`;
+      }
+      return 'Go Back to App';
+    } catch (e) {
+      return 'Go Back to IndiVibe';
+    }
+  };
+
+  const buttonText = redirectUri ? getButtonText(redirectUri) : '';
+
   // Form values
   const [formData, setFormData] = useState({
     username: '',
@@ -262,26 +299,8 @@ export function RegisterForm() {
       localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
       setUser(userData);
 
-      // Check if a redirect URL exists in query parameters
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Try reading any of the common redirect parameters we passed
-        const redirectTarget = 
-          urlParams.get('redirect_uri') || 
-          urlParams.get('return_to') || 
-          urlParams.get('redirect') || 
-          urlParams.get('callbackUrl') || 
-          urlParams.get('next') || 
-          urlParams.get('continue');
-        if (redirectTarget) {
-          // Redirect the user back to the external app immediately!
-          window.location.href = redirectTarget;
-        } else {
-          // If no redirect_uri parameter is found in URL, route normally to your Patr dashboard
-          router.push('/inbox');
-        }
-      }
+      setLoading(false);
+      setStep(4);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'Account banane mein dikkat aayi.');
@@ -292,35 +311,37 @@ export function RegisterForm() {
   return (
     <div className="space-y-6">
       {/* Step Indicator */}
-      <div className="flex justify-between items-center px-2">
-        {steps.map((s, idx) => {
-          const stepNum = idx + 1;
-          const active = step >= stepNum;
-          return (
-            <div key={idx} className="flex flex-col items-center flex-1 relative">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                  active
-                    ? 'bg-patr-orange text-white shadow-lg shadow-patr-orange/20'
-                    : 'bg-white/10 text-white/40'
-                }`}
-              >
-                {stepNum}
-              </div>
-              <span className={`text-[10px] mt-1.5 font-medium ${active ? 'text-white' : 'text-white/30'}`}>
-                {s.label}
-              </span>
-              {idx < steps.length - 1 && (
+      {step < 4 && (
+        <div className="flex justify-between items-center px-2">
+          {steps.map((s, idx) => {
+            const stepNum = idx + 1;
+            const active = step >= stepNum;
+            return (
+              <div key={idx} className="flex flex-col items-center flex-1 relative">
                 <div
-                  className={`absolute top-3.5 left-[calc(50%+16px)] right-[calc(-50%+16px)] h-0.5 -translate-y-1/2 transition-colors duration-300 ${
-                    step > stepNum ? 'bg-patr-orange' : 'bg-white/10'
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                    active
+                      ? 'bg-patr-orange text-white shadow-lg shadow-patr-orange/20'
+                      : 'bg-white/10 text-white/40'
                   }`}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+                >
+                  {stepNum}
+                </div>
+                <span className={`text-[10px] mt-1.5 font-medium ${active ? 'text-white' : 'text-white/30'}`}>
+                  {s.label}
+                </span>
+                {idx < steps.length - 1 && (
+                  <div
+                    className={`absolute top-3.5 left-[calc(50%+16px)] right-[calc(-50%+16px)] h-0.5 -translate-y-1/2 transition-colors duration-300 ${
+                      step > stepNum ? 'bg-patr-orange' : 'bg-white/10'
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2.5 p-3.5 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 text-sm">
@@ -603,14 +624,71 @@ export function RegisterForm() {
             </div>
           </motion.form>
         )}
+
+        {/* STEP 4: Success Screen */}
+        {step === 4 && (
+          <motion.div
+            key="step4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-6 text-center py-4"
+          >
+            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+              <Check className="w-8 h-8 animate-bounce" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white">Aapka Account Ready Hai! 🎉</h3>
+              <p className="text-sm text-white/60">
+                Congratulations, aapka naya Patr ID successfully ban gaya hai.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] text-left space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-white/40">Display Name:</span>
+                <span className="text-white font-semibold">{formData.name}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-white/40">Patr ID Address:</span>
+                <span className="text-patr-orange font-bold">{formData.username}@patr.in</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-white/40">Phone Number:</span>
+                <span className="text-white/80">+91 {formData.phone}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              {redirectUri ? (
+                <a
+                  href={redirectUri}
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[#FFE834] text-[#111111] border-2 border-[#111111] px-5 py-3 rounded-xl font-bold uppercase tracking-wider text-sm shadow-[4px_4px_0px_#111111] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[6px_6px_0px_#111111] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all duration-100 cursor-pointer"
+                >
+                  &larr; {buttonText}
+                </a>
+              ) : (
+                <button
+                  onClick={() => router.push('/inbox')}
+                  className="w-full h-11 rounded-xl bg-patr-orange text-white font-bold text-sm shadow-lg shadow-patr-orange/20 hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  Continue to Inbox
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      <p className="text-center text-xs text-white/40 pt-2">
-        Pehle se account hai?{' '}
-        <Link href="/login" className="text-patr-orange hover:underline font-semibold">
-          Login Karo
-        </Link>
-      </p>
+      {step < 4 && (
+        <p className="text-center text-xs text-white/40 pt-2">
+          Pehle se account hai?{' '}
+          <Link href="/login" className="text-patr-orange hover:underline font-semibold">
+            Login Karo
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
