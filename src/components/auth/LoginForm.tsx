@@ -72,7 +72,27 @@ export function LoginForm() {
       } catch (err) {
         console.error('Error pre-caching user details:', err);
       }
-      router.push('/inbox');
+      
+      // Check if a redirect URL exists in query parameters
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Try reading any of the common redirect parameters we passed
+        const redirectTarget = 
+          urlParams.get('redirect_uri') || 
+          urlParams.get('return_to') || 
+          urlParams.get('redirect') || 
+          urlParams.get('callbackUrl') || 
+          urlParams.get('next') || 
+          urlParams.get('continue');
+        if (redirectTarget) {
+          // Redirect the user back to the external app immediately!
+          window.location.href = redirectTarget;
+        } else {
+          // If no redirect parameter is found, route normally to the inbox
+          router.push('/inbox');
+        }
+      }
     }
   };
 

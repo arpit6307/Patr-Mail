@@ -262,7 +262,26 @@ export function RegisterForm() {
       localStorage.setItem(`patr_user_${user.uid}`, JSON.stringify(userData));
       setUser(userData);
 
-      router.push('/inbox');
+      // Check if a redirect URL exists in query parameters
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Try reading any of the common redirect parameters we passed
+        const redirectTarget = 
+          urlParams.get('redirect_uri') || 
+          urlParams.get('return_to') || 
+          urlParams.get('redirect') || 
+          urlParams.get('callbackUrl') || 
+          urlParams.get('next') || 
+          urlParams.get('continue');
+        if (redirectTarget) {
+          // Redirect the user back to the external app immediately!
+          window.location.href = redirectTarget;
+        } else {
+          // If no redirect_uri parameter is found in URL, route normally to your Patr dashboard
+          router.push('/inbox');
+        }
+      }
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'Account banane mein dikkat aayi.');
